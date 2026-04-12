@@ -1,0 +1,13 @@
+{
+  "name": "political-agent-free",
+  "version": "1.0.0",
+  "description": "Agente político 24/7 100% GRATUITO",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "dotenv": "^16.4.5"
+  }
+}
