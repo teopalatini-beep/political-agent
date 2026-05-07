@@ -1,0 +1,16 @@
+# fly.toml — political-agent-teo
+app = 'political-agent-teo'
+primary_region = 'gru'
+
+[build]
+
+# Sin HTTP service — el bot usa long polling, no webhooks
+# La máquina corre 24/7 sin dormir
+[env]
+  TZ = "America/Argentina/Buenos_Aires"
+  NEWSLETTER_HOUR = "8"
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
