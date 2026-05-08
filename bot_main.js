@@ -32,6 +32,8 @@ const CONFIG = {
   NEWSLETTER_MINUTE:    process.env.NEWSLETTER_MINUTE || "0",
   DEDUP_WINDOW_HOURS:   Number(process.env.DEDUP_WINDOW_HOURS || "48"),
   DEDUP_NEWSLETTER_ONLY: parseBooleanEnv(process.env.DEDUP_NEWSLETTER_ONLY, true),
+  MAX_ITEMS_PER_SOURCE_REGION: Number(process.env.MAX_ITEMS_PER_SOURCE_REGION || "3"),
+  ALERTS_LIMIT: Number(process.env.ALERTS_LIMIT || "6"),
   SEEN_LINKS_PATH:      path.join(__dirname, "seen_links.json"),
   HEARTBEAT_PATH:       path.join(__dirname, "logs", "heartbeat.json"),
   NEWSLETTER_PREVIEW_PATH: path.join(__dirname, "latest_newsletter_preview.html"),
@@ -91,6 +93,163 @@ const REGION_NAMES = {
   mideast:"Medio Oriente", brazil:"Brasil", argentina:"Argentina",
 };
 
+// ─── CATEGORÍAS TEMÁTICAS ─────────────────────────────────────────────────────
+const CATEGORIES = {
+  politica_mundial: {
+    name: "Política Mundial",
+    emoji: "🌐",
+    color: "#1d4ed8",
+    bg: "#eff6ff",
+    border: "#bfdbfe",
+    keywords: [
+      "diplomacia","diplomacy","diplomatic","tratado","treaty","cumbre","summit",
+      "onu","united nations","nato","otan","guerra","war","warfare","conflicto",
+      "conflict","sanción","sanction","alianza","alliance","acuerdo","agreement",
+      "presidente","president","premier","chancellor","canciller","minister",
+      "elección","election","voto","vote","parlamento","parliament","senado",
+      "senate","gobierno","government","congress","política exterior","foreign policy",
+      "geopolítica","geopolitics","invasión","invasion","tropas","troops","milicia",
+      "militia","cese al fuego","ceasefire","paz","peace","crisis diplomática",
+    ],
+  },
+  argentina: {
+    name: "Política Argentina",
+    emoji: "🇦🇷",
+    color: "#0369a1",
+    bg: "#f0f9ff",
+    border: "#bae6fd",
+    keywords: [
+      "argentina","milei","kirchner","peronismo","peronist","buenos aires",
+      "casa rosada","diputados","senadores","ypf","vaca muerta","patagonia",
+      "córdoba","rosario","mendoza","tucumán","la nación","clarín","infobae",
+      "dólar blue","cepo cambiario","fmi argentina","imf argentina","indec",
+      "anses","conicet","aerolíneas","pagina 12","ambito financiero",
+      "javier milei","sergio massa","cristina","macri","larreta","kicillof",
+    ],
+  },
+  economia: {
+    name: "Economía",
+    emoji: "💼",
+    color: "#065f46",
+    bg: "#ecfdf5",
+    border: "#a7f3d0",
+    keywords: [
+      "economía","economy","economic","pbi","gdp","inflación","inflation",
+      "precio","price","comercio","trade","banco","bank","reservas","deuda",
+      "deficit","impuesto","tax","presupuesto","budget","desempleo","unemployment",
+      "salario","wage","mercado","market","consumo","consumption","industria",
+      "industry","crecimiento","growth","recesión","recession","pib","gdp",
+      "déficit","surplus","exportación","importación","export","import",
+      "balanza comercial","trade balance","producto bruto","tariff","arancel",
+    ],
+  },
+  finanzas: {
+    name: "Finanzas & Mercados",
+    emoji: "💹",
+    color: "#7c3aed",
+    bg: "#f5f3ff",
+    border: "#ddd6fe",
+    keywords: [
+      "bolsa","stock","acciones","shares","dólar","dollar","peso","euro",
+      "crypto","bitcoin","ethereum","inversión","investment","fondo","fund",
+      "bonos","bonds","wall street","nasdaq","s&p 500","merval","banco central",
+      "fed","reserva federal","tasa de interés","interest rate","divisa","currency",
+      "forex","devaluación","devaluation","swap","financiero","financial",
+      "mercado financiero","hedge fund","private equity","ipo","acciones",
+      "portfolio","rendimiento","yield","cotización","tipo de cambio",
+    ],
+  },
+  inversiones: {
+    name: "Inversiones",
+    emoji: "📊",
+    color: "#b45309",
+    bg: "#fffbeb",
+    border: "#fde68a",
+    keywords: [
+      "inversión","investment","investor","venture capital","startup","unicornio",
+      "unicorn","tesla","nvidia","apple","microsoft","amazon","alphabet","meta",
+      "openai","semiconductor","chip","commodities","petróleo","oil","gas",
+      "oro","gold","plata","silver","cobre","copper","energía","energy",
+      "renovable","renewable","real estate","inmueble","propiedad","renta",
+      "dividendo","dividend","rentabilidad","retorno","roi","etf","criptoactivo",
+    ],
+  },
+  deporte: {
+    name: "Deporte",
+    emoji: "⚽",
+    color: "#dc2626",
+    bg: "#fef2f2",
+    border: "#fecaca",
+    keywords: [
+      "fútbol","football","soccer","tenis","tennis","rugby","básquet","basketball",
+      "atletismo","athletics","olimpiadas","olympics","mundial","world cup","copa",
+      "championship","liga","league","torneo","tournament","jugador","player",
+      "equipo","team","gol","goal","partido","match","fifa","uefa","conmebol",
+      "nba","nfl","mlb","formula 1","f1","motogp","ciclismo","cycling","natación",
+      "swimming","boxeo","boxing","mma","ufc","transferencia","transfer","fichaje",
+    ],
+  },
+};
+
+function classifyNewsItem(n) {
+  const text = `${n.title} ${n.description || ""}`.toLowerCase();
+  const scores = {};
+  for (const [catId, cat] of Object.entries(CATEGORIES)) {
+    scores[catId] = cat.keywords.filter(kw => text.includes(kw)).length;
+  }
+  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  return best && best[1] > 0 ? best[0] : null;
+}
+
+function buildCategorySections(allNewsByRegion) {
+  const flat = Object.values(allNewsByRegion).flat();
+  const buckets = {};
+  for (const catId of Object.keys(CATEGORIES)) buckets[catId] = [];
+
+  for (const n of flat) {
+    const catId = classifyNewsItem(n);
+    if (catId && buckets[catId].length < 8) buckets[catId].push(n);
+  }
+
+  return Object.entries(CATEGORIES).map(([catId, cat]) => {
+    const items = buckets[catId];
+    if (!items.length) return "";
+
+    const rows = items.map(n => {
+      let desc = (n.description || "").trim();
+      if (desc.length > 220) {
+        const cut = desc.lastIndexOf(". ", 220);
+        desc = cut > 60 ? desc.substring(0, cut + 1) : desc.substring(0, 220) + "…";
+      }
+      const body = desc
+        ? `<strong style="color:#111827;">${n.title}:</strong> <span style="color:#6b7280;">${desc}</span>`
+        : `<strong style="color:#111827;">${n.title}</strong>`;
+      const regionTag = `<span style="font-size:10px;background:${cat.bg};color:${cat.color};border:1px solid ${cat.border};border-radius:4px;padding:1px 6px;margin-left:6px;">${EMOJIS[n.region] || ""} ${REGION_NAMES[n.region] || n.region}</span>`;
+      return `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;font-size:13.5px;line-height:1.65;">
+          ${body}${regionTag}
+          <div style="margin-top:4px;">
+            <a href="${n.link}" style="color:${cat.color};text-decoration:none;font-size:12px;font-weight:600;">Leer más →</a>
+            <span style="font-size:11px;color:#9ca3af;margin-left:8px;">📰 ${n.source}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+
+    return `
+    <div style="background:#fff;border:1px solid ${cat.border};border-left:4px solid ${cat.color};border-radius:8px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 20px 10px;background:${cat.bg};">
+        <span style="font-size:15px;font-weight:700;color:${cat.color};">${cat.emoji} ${cat.name}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:8px;">${items.length} nota${items.length !== 1 ? "s" : ""}</span>
+      </div>
+      <div style="padding:0 20px;">
+        <table style="width:100%;border-collapse:collapse;"><tbody>${rows}</tbody></table>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 // ─── FINANZAS ─────────────────────────────────────────────────────────────────
 // Plan gratuito Twelve Data: 8 créditos/minuto (1 por símbolo por request).
 // Usamos 6 símbolos totales (3+3) para quedar cómodamente bajo el límite de 8.
@@ -149,7 +308,8 @@ function persistSeenLinks() {
 
 function wasRecentlySent(link) {
   pruneSeenLinks();
-  const ts = seenLinks.get(link);
+  const key = canonicalizeUrl(link);
+  const ts = seenLinks.get(key) || seenLinks.get(link);
   if (!ts) return false;
   const maxAgeMs = CONFIG.DEDUP_WINDOW_HOURS * 60 * 60 * 1_000;
   return Date.now() - ts <= maxAgeMs;
@@ -157,7 +317,10 @@ function wasRecentlySent(link) {
 
 function markLinksAsSent(links) {
   const now = Date.now();
-  for (const link of links) seenLinks.set(link, now);
+  for (const link of links) {
+    const key = canonicalizeUrl(link);
+    if (key) seenLinks.set(key, now);
+  }
   persistSeenLinks();
 }
 
@@ -239,6 +402,24 @@ function isValidUrl(str) {
   try { const u = new URL(str); return u.protocol === "http:" || u.protocol === "https:"; }
   catch { return false; }
 }
+function canonicalizeUrl(str) {
+  try {
+    const u = new URL(str);
+    const trackingParams = [
+      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+      "gclid", "fbclid", "igshid", "mc_cid", "mc_eid", "traffic_source",
+    ];
+    for (const param of trackingParams) u.searchParams.delete(param);
+    u.hash = "";
+    if ((u.protocol === "http:" && u.port === "80") || (u.protocol === "https:" && u.port === "443")) {
+      u.port = "";
+    }
+    u.pathname = u.pathname.replace(/\/+$/, "") || "/";
+    return u.toString();
+  } catch {
+    return String(str || "").trim();
+  }
+}
 function getNewsletterCronExpression() {
   return `${CONFIG.NEWSLETTER_MINUTE} ${CONFIG.NEWSLETTER_HOUR} * * *`;
 }
@@ -281,6 +462,28 @@ function logConfigurationStatus() {
   }
   console.log("[Config] Advertencias de configuración:");
   for (const issue of status.issues) console.log(`- ${issue}`);
+}
+
+function computeNewsletterMetrics(newsByRegion) {
+  const flat = Object.values(newsByRegion).flat();
+  const sourceCounter = new Map();
+  const regionCounter = new Map();
+  for (const item of flat) {
+    sourceCounter.set(item.source, (sourceCounter.get(item.source) || 0) + 1);
+    regionCounter.set(item.region, (regionCounter.get(item.region) || 0) + 1);
+  }
+  return {
+    totalNews: flat.length,
+    totalRegions: regionCounter.size,
+    totalSources: sourceCounter.size,
+    high: flat.filter(n => n.importance.level === "alta").length,
+    medium: flat.filter(n => n.importance.level === "media").length,
+    low: flat.filter(n => n.importance.level === "baja").length,
+    topSources: [...sourceCounter.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([source, count]) => `${source} (${count})`),
+  };
 }
 
 function writeHeartbeat(status = "ok") {
@@ -770,6 +973,14 @@ function getImportance(title, desc) {
   return { level: "baja", emoji: "🟢" };
 }
 
+function getRelevanceScore(item) {
+  const importanceWeight = { alta: 300, media: 200, baja: 100 }[item.importance.level] || 50;
+  const title = (item.title || "").trim();
+  const titleLenScore = Math.min(40, Math.max(0, title.length / 4));
+  const sourceBonus = /google news/i.test(item.source || "") ? 0 : 20;
+  return importanceWeight + titleLenScore + sourceBonus;
+}
+
 async function getRegionNews(regionId) {
   const cached = getCached(regionId);
   if (cached) return cached;
@@ -790,9 +1001,22 @@ async function getRegionNews(regionId) {
   }
 
   const seen = new Set();
+  const sourceCounter = new Map();
   const news = aggregated
-    .filter(n => { if (seen.has(n.link)) return false; seen.add(n.link); return true; })
-    .sort((a, b) => ({ alta:3, media:2, baja:1 }[b.importance.level] - { alta:3, media:2, baja:1 }[a.importance.level]))
+    .filter(n => {
+      const canonical = canonicalizeUrl(n.link);
+      if (!canonical || seen.has(canonical)) return false;
+      seen.add(canonical);
+      n.link = canonical;
+      return true;
+    })
+    .sort((a, b) => getRelevanceScore(b) - getRelevanceScore(a))
+    .filter(n => {
+      const count = sourceCounter.get(n.source) || 0;
+      if (count >= CONFIG.MAX_ITEMS_PER_SOURCE_REGION) return false;
+      sourceCounter.set(n.source, count + 1);
+      return true;
+    })
     .slice(0, CONFIG.MAX_NEWS_PER_REGION);
   setCache(regionId, news);
   return news;
@@ -843,153 +1067,179 @@ async function sendToChat(chatId, text) { for (const c of splitMessage(text)) aw
 
 // ─── NEWSLETTER HTML ──────────────────────────────────────────────────────────
 function buildNewsletterHTML(allNewsByRegion, financial = null) {
-  const now  = new Date();
+  const now = new Date();
   const dateStr = now.toLocaleDateString("es-AR", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
     timeZone: CONFIG.TIMEZONE,
   });
+  const dateCapitalized = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+  const editionNum = Math.floor((now - new Date("2024-01-01")) / 86400000);
 
-  // Nota editorial del editor (opcional)
+  // ── Editorial note ────────────────────────────────────────────────────────
   const nota = getNotaEditorial();
   const notaHTML = nota ? `
-  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #2563eb;border-radius:8px;padding:16px 20px;margin-bottom:16px;">
-    <div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">✍️ Nota del editor</div>
-    <p style="font-size:14px;color:#1e3a5f;line-height:1.7;margin:0;white-space:pre-wrap;">${nota}</p>
+  <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 100%);border-radius:10px;padding:22px 24px;margin-bottom:18px;">
+    <div style="font-size:10px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">✍️ Del editor</div>
+    <p style="font-size:15px;color:#f0f9ff;line-height:1.8;margin:0;font-style:italic;white-space:pre-wrap;">"${nota}"</p>
+    <div style="margin-top:12px;font-size:11px;color:#60a5fa;">— Teo Palatini</div>
   </div>` : "";
 
-  // Todas las noticias en un array plano
+  // ── Métricas ──────────────────────────────────────────────────────────────
   const flat = Object.values(allNewsByRegion).flat();
-  const alerts = flat.filter(n => n.importance.level === "alta").slice(0, 6);
+  const alerts = flat.filter(n => n.importance.level === "alta").slice(0, CONFIG.ALERTS_LIMIT);
+  const metrics = computeNewsletterMetrics(allNewsByRegion);
 
-  const alertsHTML = alerts.length ? `
-  <div class="section">
-    <div class="section-title">🚨 Alertas del día</div>
-    ${alerts.map(n => `
-    <div class="alert-card">
-      <div class="alert-flag">${EMOJIS[n.region]} ${REGION_NAMES[n.region]}</div>
-      <a class="alert-link" href="${n.link}">${n.title}</a>
-      <div class="source-tag">📰 ${n.source}</div>
-    </div>`).join("")}
-  </div>` : "";
+  const statsBar = `
+  <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+    <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid #e5e7eb;background:#fff;">
+      <div style="font-size:20px;font-weight:800;color:#111827;">${metrics.totalNews}</div>
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Noticias</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid #e5e7eb;background:#fff;">
+      <div style="font-size:20px;font-weight:800;color:#dc2626;">${metrics.high}</div>
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Alertas</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid #e5e7eb;background:#fff;">
+      <div style="font-size:20px;font-weight:800;color:#059669;">${metrics.totalRegions}</div>
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Regiones</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:12px 8px;background:#fff;">
+      <div style="font-size:20px;font-weight:800;color:#7c3aed;">${metrics.totalSources}</div>
+      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Fuentes</div>
+    </div>
+  </div>`;
 
-  const regionHTML = Object.entries(REGION_NAMES).map(([id, name]) => {
-    const news = (allNewsByRegion[id] || []).slice(0, 4);
-    if (!news.length) return "";
-    const items = news.map(n => `
-      <div class="news-item">
-        <span class="badge badge-${n.importance.level}">${n.importance.emoji}</span>
-        <a class="news-link" href="${n.link}">${n.title}</a>
-        <span class="source-mini">${n.source}</span>
-      </div>`).join("");
-    return `
-    <div class="region-block">
-      <div class="region-title">${EMOJIS[id]} ${name}</div>
-      ${items}
-    </div>`;
-  }).join("");
-
-  // ── News card por región ──────────────────────────────────────────────────
-  const regionCards = Object.entries(REGION_NAMES).map(([id, name]) => {
-    const news = (allNewsByRegion[id] || []).slice(0, 5);
-    if (!news.length) return "";
-    const items = news.map(n => {
-      const emoji = getNewsEmoji(n.title, n.description);
-      // Descripción: máx 2 oraciones limpias
+  // ── Alertas del día ───────────────────────────────────────────────────────
+  const alertCard = alerts.length ? (() => {
+    const rows = alerts.map(n => {
       let desc = (n.description || "").trim();
-      if (desc.length > 300) {
-        const cut = desc.lastIndexOf(". ", 300);
-        desc = cut > 80 ? desc.substring(0, cut + 1) : desc.substring(0, 300) + "…";
+      if (desc.length > 240) {
+        const cut = desc.lastIndexOf(". ", 240);
+        desc = cut > 60 ? desc.substring(0, cut + 1) : desc.substring(0, 240) + "…";
       }
-      // Formato SA: emoji **Título:** descripción [Fuente →]
       const body = desc
-        ? `<strong style="color:#111827;">${n.title}:</strong> <span style="color:#4b5563;">${desc}</span>`
-        : `<strong style="color:#111827;">${n.title}</strong>`;
+        ? `<strong style="color:#fff;">${n.title}:</strong> <span style="color:#fca5a5;">${desc}</span>`
+        : `<strong style="color:#fff;">${n.title}</strong>`;
       return `
       <tr>
-        <td style="padding:11px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;font-size:14px;line-height:1.65;">
-          <span style="font-size:15px;margin-right:5px;">${emoji}</span>${body} <a href="${n.link}" style="color:#2563eb;text-decoration:none;font-weight:500;white-space:nowrap;">[${n.source} →]</a>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.1);vertical-align:top;font-size:13.5px;line-height:1.65;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#fca5a5;margin-bottom:5px;">${EMOJIS[n.region] || ""} ${REGION_NAMES[n.region] || n.region}</div>
+          ${body}
+          <div style="margin-top:5px;"><a href="${n.link}" style="color:#fbbf24;text-decoration:none;font-size:12px;font-weight:600;">Ver noticia →</a><span style="font-size:11px;color:#f87171;margin-left:8px;">📰 ${n.source}</span></div>
         </td>
       </tr>`;
     }).join("");
     return `
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;overflow:hidden;">
-      <div style="padding:12px 20px 10px;border-bottom:1px solid #f3f4f6;">
+  <div style="background:linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%);border-radius:10px;margin-bottom:18px;overflow:hidden;">
+    <div style="padding:14px 22px 12px;">
+      <span style="font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px;">🚨 Alertas del día</span>
+    </div>
+    <div style="padding:0 22px 4px;">
+      <table style="width:100%;border-collapse:collapse;"><tbody>${rows}</tbody></table>
+    </div>
+  </div>`;
+  })() : "";
+
+  // ── Noticias por región ───────────────────────────────────────────────────
+  const regionCards = Object.entries(REGION_NAMES).map(([id, name]) => {
+    const news = (allNewsByRegion[id] || []).slice(0, 6);
+    if (!news.length) return "";
+    const items = news.map((n, i) => {
+      const emoji = getNewsEmoji(n.title, n.description);
+      let desc = (n.description || "").trim();
+      if (desc.length > 260) {
+        const cut = desc.lastIndexOf(". ", 260);
+        desc = cut > 60 ? desc.substring(0, cut + 1) : desc.substring(0, 260) + "…";
+      }
+      const importanceDot = n.importance.level === "alta"
+        ? `<span style="display:inline-block;width:7px;height:7px;background:#ef4444;border-radius:50%;margin-right:5px;vertical-align:middle;"></span>`
+        : n.importance.level === "media"
+          ? `<span style="display:inline-block;width:7px;height:7px;background:#f59e0b;border-radius:50%;margin-right:5px;vertical-align:middle;"></span>`
+          : "";
+      const body = desc
+        ? `${importanceDot}<strong style="color:#111827;">${n.title}:</strong> <span style="color:#6b7280;">${desc}</span>`
+        : `${importanceDot}<strong style="color:#111827;">${n.title}</strong>`;
+      return `
+      <tr>
+        <td style="padding:11px 0;border-bottom:${i < news.length - 1 ? "1px solid #f3f4f6" : "none"};vertical-align:top;font-size:13.5px;line-height:1.65;">
+          <span style="font-size:16px;margin-right:5px;">${emoji}</span>${body}
+          <div style="margin-top:4px;"><a href="${n.link}" style="color:#2563eb;text-decoration:none;font-size:12px;font-weight:600;">Leer más →</a><span style="font-size:11px;color:#9ca3af;margin-left:8px;">📰 ${n.source}</span></div>
+        </td>
+      </tr>`;
+    }).join("");
+    return `
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <div style="padding:13px 22px 11px;background:linear-gradient(90deg,#f9fafb 0%,#fff 100%);border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:15px;font-weight:700;color:#111827;">${EMOJIS[id]} ${name}</span>
+        <span style="font-size:11px;color:#9ca3af;">${news.length} nota${news.length !== 1 ? "s" : ""}</span>
       </div>
-      <div style="padding:0 20px;">
+      <div style="padding:2px 22px 6px;">
         <table style="width:100%;border-collapse:collapse;"><tbody>${items}</tbody></table>
       </div>
     </div>`;
   }).join("");
 
-  // ── Alertas del día ───────────────────────────────────────────────────────
-  const alertRows = alerts.map(n => {
-    const emoji = getNewsEmoji(n.title, n.description);
-    let desc = (n.description || "").trim();
-    if (desc.length > 300) {
-      const cut = desc.lastIndexOf(". ", 300);
-      desc = cut > 80 ? desc.substring(0, cut + 1) : desc.substring(0, 300) + "…";
-    }
-    const body = desc
-      ? `<strong style="color:#111827;">${n.title}:</strong> <span style="color:#4b5563;">${desc}</span>`
-      : `<strong style="color:#111827;">${n.title}</strong>`;
-    return `
-    <tr>
-      <td style="padding:11px 0;border-bottom:1px solid #fee2e2;vertical-align:top;font-size:14px;line-height:1.65;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#dc2626;margin-bottom:5px;">${EMOJIS[n.region]} ${REGION_NAMES[n.region]}</div>
-        <span style="font-size:15px;margin-right:5px;">${emoji}</span>${body} <a href="${n.link}" style="color:#dc2626;text-decoration:none;font-weight:500;white-space:nowrap;">[${n.source} →]</a>
-      </td>
-    </tr>`;
-  }).join("");
-
-  const alertCard = alerts.length ? `
-  <div style="background:#fff;border:1px solid #fca5a5;border-left:4px solid #ef4444;border-radius:8px;margin-bottom:16px;overflow:hidden;">
-    <div style="padding:12px 20px 10px;border-bottom:1px solid #fee2e2;">
-      <span style="font-size:15px;font-weight:700;color:#dc2626;">Alertas del día</span>
-    </div>
-    <div style="padding:0 20px;">
-      <table style="width:100%;border-collapse:collapse;"><tbody>${alertRows}</tbody></table>
-    </div>
-  </div>` : "";
+  // ── Por categorías ────────────────────────────────────────────────────────
+  const categorySections = buildCategorySections(allNewsByRegion);
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agente Político — Newsletter</title>
+<title>Agente Político — Newsletter #${editionNum}</title>
 </head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:20px 16px;">
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<div style="max-width:620px;margin:0 auto;padding:24px 16px 40px;">
 
-  <!-- HEADER -->
-  <div style="text-align:center;padding:20px 0 18px;">
-    <div style="font-size:11px;color:#6b7280;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.6px;">${dateStr}</div>
-    <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
-        <rect width="38" height="38" rx="8" fill="#111827"/>
-        <circle cx="19" cy="19" r="10" fill="none" stroke="white" stroke-width="1.2"/>
-        <line x1="19" y1="9" x2="19" y2="29" stroke="white" stroke-width="1.2"/>
-        <line x1="9" y1="19" x2="29" y2="19" stroke="white" stroke-width="1.2"/>
-        <ellipse cx="19" cy="19" rx="5" ry="10" fill="none" stroke="white" stroke-width="1.2"/>
+  <!-- ══ HEADER ══ -->
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1d4ed8 100%);border-radius:14px;padding:32px 28px 28px;margin-bottom:20px;text-align:center;">
+    <div style="font-size:11px;color:#60a5fa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;">${dateCapitalized}</div>
+    <div style="margin-bottom:10px;">
+      <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;">
+        <rect width="44" height="44" rx="10" fill="rgba(255,255,255,0.12)"/>
+        <circle cx="22" cy="22" r="12" fill="none" stroke="white" stroke-width="1.5"/>
+        <line x1="22" y1="10" x2="22" y2="34" stroke="white" stroke-width="1.5"/>
+        <line x1="10" y1="22" x2="34" y2="22" stroke="white" stroke-width="1.5"/>
+        <ellipse cx="22" cy="22" rx="6" ry="12" fill="none" stroke="white" stroke-width="1.2"/>
       </svg>
-      <span style="font-size:22px;font-weight:800;color:#111827;letter-spacing:-0.3px;">Agente Político</span>
     </div>
-    <div style="font-size:12px;color:#9ca3af;">Política exterior · Fuentes diversas · Sin sesgo editorial</div>
+    <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:6px;">Agente Político</div>
+    <div style="font-size:12px;color:#93c5fd;letter-spacing:0.3px;">Política · Economía · Finanzas · Sin sesgo editorial</div>
+    <div style="margin-top:14px;display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 14px;font-size:11px;color:#bfdbfe;"># Edición ${editionNum}</div>
   </div>
 
   ${notaHTML}
+
+  ${statsBar}
 
   ${financial ? buildFinancialHTML(financial) : ""}
 
   ${alertCard}
 
+  <!-- ══ NOTICIAS POR REGIÓN ══ -->
+  <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-left:2px;">🗺️ Por región</div>
   ${regionCards}
 
-  <!-- FOOTER -->
-  <div style="text-align:center;padding:20px 0 8px;font-size:11px;color:#9ca3af;line-height:1.8;">
-    <p>Agente Político · Generado automáticamente · ${now.getFullYear()}</p>
-    <p>Fuentes: BBC · NPR · Euronews · DW · SCMP · Moscow Times · Al Jazeera · Folha · La Nación · Clarín</p>
+  <!-- ══ SEPARADOR ══ -->
+  <div style="margin:28px 0 22px;display:flex;align-items:center;gap:12px;">
+    <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#e5e7eb);"></div>
+    <div style="background:#111827;color:#fff;font-size:11px;font-weight:700;padding:6px 16px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Por categoría</div>
+    <div style="flex:1;height:1px;background:linear-gradient(90deg,#e5e7eb,transparent);"></div>
+  </div>
+
+  <!-- ══ NOTICIAS POR CATEGORÍA ══ -->
+  ${categorySections}
+
+  <!-- ══ FOOTER ══ -->
+  <div style="margin-top:32px;text-align:center;padding:20px;background:#fff;border-radius:10px;border:1px solid #e5e7eb;">
+    <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:4px;">Agente Político</div>
+    <div style="font-size:11px;color:#9ca3af;line-height:1.9;">
+      Generado automáticamente · ${now.getFullYear()}<br>
+      BBC · NPR · Euronews · DW · SCMP · Moscow Times · Al Jazeera · Folha · La Nación · Clarín<br>
+      <span style="color:#d1d5db;">——</span><br>
+      Para agregar tu nota editorial: <strong>/setnota</strong> en Telegram
+    </div>
   </div>
 
 </div>
@@ -1052,6 +1302,8 @@ async function sendNewsletter() {
     : allNewsByRegion;
 
   const remaining = Object.values(finalNewsByRegion).flat();
+  const metrics = computeNewsletterMetrics(finalNewsByRegion);
+  console.log(`[Newsletter] Métricas — total=${metrics.totalNews}, alertas=${metrics.high}, fuentes=${metrics.totalSources}, regiones=${metrics.totalRegions}`);
   if (!remaining.length) {
     console.log("[Newsletter] Sin noticias nuevas tras filtro anti-duplicados");
     return { ok: false, reason: "no_fresh_news" };
@@ -1122,6 +1374,29 @@ async function saveNewsletterToDrive(html, dateStr) {
 
 // ─── BOT ──────────────────────────────────────────────────────────────────────
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
+const COMMAND_HELP = [
+  "🌐 *Agente Político*",
+  "",
+  "*Monitoreo*",
+  "• /check — Alertas relevantes ahora",
+  "• /all — Panorama global por regiones",
+  "• /status — Estado de configuración y cron",
+  "",
+  "*Mercados*",
+  "• /crypto — Top 10 cripto",
+  "• /stocks — S&P 500 y ADRs argentinos",
+  "",
+  "*Newsletter*",
+  "• /preview — Vista previa",
+  "• /preview_dedup — Preview filtrado por dedup",
+  "• /newsletter — Envío manual inmediato",
+  "• /quality — Métricas editoriales del último fetch",
+  "",
+  "*Gestión*",
+  "• /addmail /removemail /listmails",
+  "• /setnota /nota /clearnota",
+  "• /test_email",
+].join("\n");
 
 bot.use(async (ctx, next) => {
   if (!isAuthorized(ctx)) return;
@@ -1131,28 +1406,9 @@ bot.use(async (ctx, next) => {
 });
 
 bot.command("start", ctx =>
-  ctx.reply(
-    `🌐 *Agente Político*\n\n` +
-    `Comandos disponibles:\n` +
-    `/check — Noticias importantes ahora\n` +
-    `/usa /europe /china /russia\n` +
-    `/mideast /brazil /argentina\n` +
-    `/all — Resumen global\n` +
-    `/crypto — Top 10 criptomonedas\n` +
-    `/stocks — Acciones S\\&P 500 y Merval\n` +
-    `/newsletter — Enviar newsletter ahora\n` +
-    `/preview — Ver newsletter antes de enviar\n` +
-    `/addmail — Agregar destinatario\n` +
-    `/removemail — Eliminar destinatario\n` +
-    `/listmails — Ver lista de destinatarios\n` +
-    `/setnota — Agregar nota del editor\n` +
-    `/nota — Ver nota editorial activa\n` +
-    `/clearnota — Borrar nota editorial\n` +
-    `/test_email — Probar conexión de email\n` +
-    `/status — Ver configuración actual`,
-    SEND_OPTS
-  )
+  ctx.reply(COMMAND_HELP, SEND_OPTS)
 );
+bot.command("help", ctx => ctx.reply(COMMAND_HELP, SEND_OPTS));
 
 for (const [id, name] of Object.entries(REGION_NAMES)) {
   bot.command(id, async ctx => {
@@ -1366,20 +1622,39 @@ bot.command("status", async ctx => {
     `• Destino email: ${escapeMd(status.emailTo || "(sin definir)")}`,
     `• Ventana anti-duplicados: ${status.dedupHours}h`,
     `• Dedup solo newsletter: ${status.dedupNewsletterOnly ? "✅ Sí" : "❌ No"}`,
+    `• Max notas por fuente/región: ${CONFIG.MAX_ITEMS_PER_SOURCE_REGION}`,
     `• Programación: \`${cronExpr}\` (${escapeMd(CONFIG.TIMEZONE)})`,
     "",
-    "Comandos útiles:",
-    "• /check",
-    "• /all",
-    "• /newsletter",
-    "• /test_email",
-    "• /preview",
-    "• /preview_dedup",
+    "Comandos útiles: /check /all /newsletter /preview /preview_dedup /quality",
   ];
 
   if (status.issues.length) {
     lines.push("", "*Advertencias:*");
     for (const issue of status.issues) lines.push(`• ${escapeMd(issue)}`);
+  }
+  await sendToCtx(ctx, lines.join("\n"));
+});
+
+bot.command("quality", async ctx => {
+  await ctx.reply("📊 Calculando métricas editoriales...");
+  const allNewsByRegion = await collectAllNewsByRegion();
+  const finalNewsByRegion = CONFIG.DEDUP_NEWSLETTER_ONLY
+    ? applyDedupFilter(allNewsByRegion)
+    : allNewsByRegion;
+  const metrics = computeNewsletterMetrics(finalNewsByRegion);
+  const lines = [
+    "📊 *Calidad editorial (snapshot)*",
+    "",
+    `• Noticias: *${metrics.totalNews}*`,
+    `• Alertas: *${metrics.high}*`,
+    `• Prioridad media: *${metrics.medium}*`,
+    `• Prioridad baja: *${metrics.low}*`,
+    `• Regiones activas: *${metrics.totalRegions}*`,
+    `• Fuentes activas: *${metrics.totalSources}*`,
+  ];
+  if (metrics.topSources.length) {
+    lines.push("", "*Top fuentes:*");
+    for (const source of metrics.topSources) lines.push(`• ${escapeMd(source)}`);
   }
   await sendToCtx(ctx, lines.join("\n"));
 });
