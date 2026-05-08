@@ -36,6 +36,7 @@ const CONFIG = {
   ALERTS_LIMIT: Number(process.env.ALERTS_LIMIT || "6"),
   SEEN_LINKS_PATH:      path.join(__dirname, "seen_links.json"),
   HEARTBEAT_PATH:       path.join(__dirname, "logs", "heartbeat.json"),
+  HEARTBEAT_COMPAT_PATH: process.env.HEARTBEAT_COMPAT_PATH || "/tmp/political-agent-heartbeat.json",
   NEWSLETTER_PREVIEW_PATH: path.join(__dirname, "latest_newsletter_preview.html"),
   NOTA_EDITORIAL_PATH:  path.join(__dirname, "nota_editorial.txt"),
   RECIPIENTS_PATH:      path.join(__dirname, "recipients.txt"),
@@ -94,13 +95,15 @@ const REGION_NAMES = {
 };
 
 // ─── CATEGORÍAS TEMÁTICAS ─────────────────────────────────────────────────────
+// Paleta unificada: todos los cards usan el mismo estilo —
+// el emoji es el único diferenciador visual (Morning Brew approach).
+const CAT_STYLE = { color: "#0f172a", bg: "#f8fafc", border: "#e2e8f0", accent: "#1e3a5f" };
+
 const CATEGORIES = {
   politica_mundial: {
     name: "Política Mundial",
     emoji: "🌐",
-    color: "#1d4ed8",
-    bg: "#eff6ff",
-    border: "#bfdbfe",
+    ...CAT_STYLE,
     keywords: [
       "diplomacia","diplomacy","diplomatic","tratado","treaty","cumbre","summit",
       "onu","united nations","nato","otan","guerra","war","warfare","conflicto",
@@ -115,9 +118,7 @@ const CATEGORIES = {
   argentina: {
     name: "Política Argentina",
     emoji: "🇦🇷",
-    color: "#0369a1",
-    bg: "#f0f9ff",
-    border: "#bae6fd",
+    ...CAT_STYLE,
     keywords: [
       "argentina","milei","kirchner","peronismo","peronist","buenos aires",
       "casa rosada","diputados","senadores","ypf","vaca muerta","patagonia",
@@ -130,9 +131,7 @@ const CATEGORIES = {
   economia: {
     name: "Economía",
     emoji: "💼",
-    color: "#065f46",
-    bg: "#ecfdf5",
-    border: "#a7f3d0",
+    ...CAT_STYLE,
     keywords: [
       "economía","economy","economic","pbi","gdp","inflación","inflation",
       "precio","price","comercio","trade","banco","bank","reservas","deuda",
@@ -146,9 +145,7 @@ const CATEGORIES = {
   finanzas: {
     name: "Finanzas & Mercados",
     emoji: "💹",
-    color: "#7c3aed",
-    bg: "#f5f3ff",
-    border: "#ddd6fe",
+    ...CAT_STYLE,
     keywords: [
       "bolsa","stock","acciones","shares","dólar","dollar","peso","euro",
       "crypto","bitcoin","ethereum","inversión","investment","fondo","fund",
@@ -162,9 +159,7 @@ const CATEGORIES = {
   inversiones: {
     name: "Inversiones",
     emoji: "📊",
-    color: "#b45309",
-    bg: "#fffbeb",
-    border: "#fde68a",
+    ...CAT_STYLE,
     keywords: [
       "inversión","investment","investor","venture capital","startup","unicornio",
       "unicorn","tesla","nvidia","apple","microsoft","amazon","alphabet","meta",
@@ -177,9 +172,7 @@ const CATEGORIES = {
   deporte: {
     name: "Deporte",
     emoji: "⚽",
-    color: "#dc2626",
-    bg: "#fef2f2",
-    border: "#fecaca",
+    ...CAT_STYLE,
     keywords: [
       "fútbol","football","soccer","tenis","tennis","rugby","básquet","basketball",
       "atletismo","athletics","olimpiadas","olympics","mundial","world cup","copa",
@@ -215,33 +208,37 @@ function buildCategorySections(allNewsByRegion) {
     const items = buckets[catId];
     if (!items.length) return "";
 
-    const rows = items.map(n => {
+    const rows = items.map((n, i) => {
       let desc = (n.description || "").trim();
       if (desc.length > 220) {
         const cut = desc.lastIndexOf(". ", 220);
         desc = cut > 60 ? desc.substring(0, cut + 1) : desc.substring(0, 220) + "…";
       }
+      const isAlert = n.importance.level === "alta";
+      const dot = isAlert
+        ? `<span style="display:inline-block;width:6px;height:6px;background:#ef4444;border-radius:50%;margin-right:5px;vertical-align:middle;"></span>`
+        : "";
       const body = desc
-        ? `<strong style="color:#111827;">${n.title}:</strong> <span style="color:#6b7280;">${desc}</span>`
-        : `<strong style="color:#111827;">${n.title}</strong>`;
-      const regionTag = `<span style="font-size:10px;background:${cat.bg};color:${cat.color};border:1px solid ${cat.border};border-radius:4px;padding:1px 6px;margin-left:6px;">${EMOJIS[n.region] || ""} ${REGION_NAMES[n.region] || n.region}</span>`;
+        ? `${dot}<strong style="color:#111827;">${n.title}:</strong> <span style="color:#6b7280;font-size:13px;">${desc}</span>`
+        : `${dot}<strong style="color:#111827;">${n.title}</strong>`;
+      const regionTag = `<span style="font-size:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:4px;padding:1px 7px;margin-left:6px;white-space:nowrap;">${EMOJIS[n.region] || ""} ${REGION_NAMES[n.region] || n.region}</span>`;
       return `
       <tr>
-        <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;font-size:13.5px;line-height:1.65;">
+        <td style="padding:11px 0;border-bottom:${i < items.length - 1 ? "1px solid #f1f5f9" : "none"};vertical-align:top;font-size:13.5px;line-height:1.65;">
           ${body}${regionTag}
-          <div style="margin-top:4px;">
-            <a href="${n.link}" style="color:${cat.color};text-decoration:none;font-size:12px;font-weight:600;">Leer más →</a>
-            <span style="font-size:11px;color:#9ca3af;margin-left:8px;">📰 ${n.source}</span>
+          <div style="margin-top:5px;">
+            <a href="${n.link}" style="color:#1e3a5f;text-decoration:none;font-size:12px;font-weight:600;">Leer más →</a>
+            <span style="font-size:11px;color:#94a3b8;margin-left:8px;">📰 ${n.source}</span>
           </div>
         </td>
       </tr>`;
     }).join("");
 
     return `
-    <div style="background:#fff;border:1px solid ${cat.border};border-left:4px solid ${cat.color};border-radius:8px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 20px 10px;background:${cat.bg};">
-        <span style="font-size:15px;font-weight:700;color:${cat.color};">${cat.emoji} ${cat.name}</span>
-        <span style="font-size:11px;color:#9ca3af;margin-left:8px;">${items.length} nota${items.length !== 1 ? "s" : ""}</span>
+    <div id="cat-${catId}" style="background:#fff;border:1px solid #e2e8f0;border-left:3px solid #0f172a;border-radius:8px;margin-bottom:12px;overflow:hidden;">
+      <div style="padding:11px 20px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:14px;font-weight:700;color:#0f172a;">${cat.emoji}&nbsp; ${cat.name}</span>
+        <span style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">${items.length} nota${items.length !== 1 ? "s" : ""}</span>
       </div>
       <div style="padding:0 20px;">
         <table style="width:100%;border-collapse:collapse;"><tbody>${rows}</tbody></table>
@@ -487,17 +484,19 @@ function computeNewsletterMetrics(newsByRegion) {
 }
 
 function writeHeartbeat(status = "ok") {
-  try {
-    const payload = {
-      status,
-      pid: process.pid,
-      updatedAt: new Date().toISOString(),
-      uptimeSec: Math.floor(process.uptime()),
-    };
-    fs.mkdirSync(path.dirname(CONFIG.HEARTBEAT_PATH), { recursive: true });
-    fs.writeFileSync(CONFIG.HEARTBEAT_PATH, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
-    console.error("[Heartbeat] Error escribiendo heartbeat:", e.message);
+  const payload = {
+    status,
+    pid: process.pid,
+    updatedAt: new Date().toISOString(),
+    uptimeSec: Math.floor(process.uptime()),
+  };
+  for (const target of [CONFIG.HEARTBEAT_PATH, CONFIG.HEARTBEAT_COMPAT_PATH]) {
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, JSON.stringify(payload, null, 2), "utf8");
+    } catch (e) {
+      console.error(`[Heartbeat] Error escribiendo ${target}:`, e.message);
+    }
   }
 }
 
@@ -1182,6 +1181,17 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
   // ── Por categorías ────────────────────────────────────────────────────────
   const categorySections = buildCategorySections(allNewsByRegion);
 
+  // ── Índice de categorías (ToC clickeable) ────────────────────────────────
+  const catIndex = Object.entries(CATEGORIES)
+    .filter(([catId]) => {
+      // Solo mostrar las que tienen contenido
+      const flat2 = Object.values(allNewsByRegion).flat();
+      return flat2.some(n => classifyNewsItem(n) === catId);
+    })
+    .map(([catId, cat]) =>
+      `<a href="#cat-${catId}" style="display:inline-block;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;color:#1e3a5f;text-decoration:none;white-space:nowrap;">${cat.emoji} ${cat.name}</a>`
+    ).join(" ");
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1193,52 +1203,74 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
 <div style="max-width:620px;margin:0 auto;padding:24px 16px 40px;">
 
   <!-- ══ HEADER ══ -->
-  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1d4ed8 100%);border-radius:14px;padding:32px 28px 28px;margin-bottom:20px;text-align:center;">
-    <div style="font-size:11px;color:#60a5fa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;">${dateCapitalized}</div>
-    <div style="margin-bottom:10px;">
-      <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;">
-        <rect width="44" height="44" rx="10" fill="rgba(255,255,255,0.12)"/>
-        <circle cx="22" cy="22" r="12" fill="none" stroke="white" stroke-width="1.5"/>
-        <line x1="22" y1="10" x2="22" y2="34" stroke="white" stroke-width="1.5"/>
-        <line x1="10" y1="22" x2="34" y2="22" stroke="white" stroke-width="1.5"/>
-        <ellipse cx="22" cy="22" rx="6" ry="12" fill="none" stroke="white" stroke-width="1.2"/>
+  <div style="background:#0f172a;border-radius:14px;padding:34px 30px 28px;margin-bottom:18px;text-align:center;">
+
+    <!-- Fecha + edición -->
+    <div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:20px;">${dateCapitalized} &nbsp;·&nbsp; Edición #${editionNum}</div>
+
+    <!-- Logo + Título -->
+    <div style="margin-bottom:14px;">
+      <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;">
+        <rect width="48" height="48" rx="12" fill="#1e3a5f"/>
+        <circle cx="24" cy="24" r="13" fill="none" stroke="white" stroke-width="1.4"/>
+        <line x1="24" y1="11" x2="24" y2="37" stroke="white" stroke-width="1.4"/>
+        <line x1="11" y1="24" x2="37" y2="24" stroke="white" stroke-width="1.4"/>
+        <ellipse cx="24" cy="24" rx="6.5" ry="13" fill="none" stroke="white" stroke-width="1.2"/>
       </svg>
     </div>
-    <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:6px;">Agente Político</div>
-    <div style="font-size:12px;color:#93c5fd;letter-spacing:0.3px;">Política · Economía · Finanzas · Sin sesgo editorial</div>
-    <div style="margin-top:14px;display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 14px;font-size:11px;color:#bfdbfe;"># Edición ${editionNum}</div>
+    <div style="font-size:28px;font-weight:900;color:#f8fafc;letter-spacing:-0.5px;margin-bottom:5px;">Agente Político</div>
+    <div style="font-size:12px;color:#64748b;letter-spacing:0.4px;">Política · Economía · Finanzas · Sin sesgo</div>
+
+    <!-- Firma personal -->
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid #1e293b;display:flex;align-items:center;justify-content:center;gap:12px;">
+      <div style="width:34px;height:34px;background:#1e3a5f;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#93c5fd;flex-shrink:0;">T</div>
+      <div style="text-align:left;">
+        <div style="font-size:13px;font-weight:700;color:#e2e8f0;">Teo Palatini</div>
+        <div style="font-size:10px;color:#64748b;margin-top:1px;">Buenos Aires · UDESA · tpalatini@udesa.edu.ar</div>
+      </div>
+    </div>
+
   </div>
 
+  <!-- ══ NOTA EDITORIAL ══ -->
   ${notaHTML}
 
+  <!-- ══ STATS ══ -->
   ${statsBar}
 
+  <!-- ══ ÍNDICE DE CATEGORÍAS ══ -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
+    <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">En este número</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;line-height:1;">
+      ${catIndex}
+    </div>
+  </div>
+
+  <!-- ══ FINANZAS ══ -->
   ${financial ? buildFinancialHTML(financial) : ""}
 
+  <!-- ══ ALERTAS ══ -->
   ${alertCard}
 
   <!-- ══ NOTICIAS POR REGIÓN ══ -->
-  <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-left:2px;">🗺️ Por región</div>
+  <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;margin-top:4px;">🗺️ Por región</div>
   ${regionCards}
 
-  <!-- ══ SEPARADOR ══ -->
-  <div style="margin:28px 0 22px;display:flex;align-items:center;gap:12px;">
-    <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#e5e7eb);"></div>
-    <div style="background:#111827;color:#fff;font-size:11px;font-weight:700;padding:6px 16px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Por categoría</div>
-    <div style="flex:1;height:1px;background:linear-gradient(90deg,#e5e7eb,transparent);"></div>
+  <!-- ══ DIVISOR ══ -->
+  <div style="margin:30px 0 20px;text-align:center;">
+    <div style="display:inline-block;background:#0f172a;color:#94a3b8;font-size:9px;font-weight:700;padding:5px 18px;border-radius:20px;letter-spacing:1.2px;text-transform:uppercase;">Por categoría</div>
   </div>
 
-  <!-- ══ NOTICIAS POR CATEGORÍA ══ -->
+  <!-- ══ CATEGORÍAS ══ -->
   ${categorySections}
 
   <!-- ══ FOOTER ══ -->
-  <div style="margin-top:32px;text-align:center;padding:20px;background:#fff;border-radius:10px;border:1px solid #e5e7eb;">
-    <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:4px;">Agente Político</div>
-    <div style="font-size:11px;color:#9ca3af;line-height:1.9;">
-      Generado automáticamente · ${now.getFullYear()}<br>
+  <div style="margin-top:30px;padding:22px 24px;background:#fff;border-radius:10px;border:1px solid #e2e8f0;text-align:center;">
+    <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:6px;">Agente Político</div>
+    <div style="font-size:11px;color:#94a3b8;line-height:2;">
+      Curado por <strong style="color:#1e3a5f;">Teo Palatini</strong> · Buenos Aires · ${now.getFullYear()}<br>
       BBC · NPR · Euronews · DW · SCMP · Moscow Times · Al Jazeera · Folha · La Nación · Clarín<br>
-      <span style="color:#d1d5db;">——</span><br>
-      Para agregar tu nota editorial: <strong>/setnota</strong> en Telegram
+      <span style="font-size:10px;color:#cbd5e1;">Agregá tu nota: <strong>/setnota</strong> en Telegram</span>
     </div>
   </div>
 
