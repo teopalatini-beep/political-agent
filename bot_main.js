@@ -1354,19 +1354,133 @@ async function sendNewsletter() {
     return { ok: false, reason: "no_recipients" };
   }
 
-  await transporter.sendMail({
-    from: `"Agente Político 🌐" <${process.env.EMAIL_FROM}>`,
-    to:   recipients.join(", "),
-    subject: `🌐 Newsletter Político — ${dateStr}`,
-    html,
-  });
+  // ── Envío paralelo: email directo + Beehiiv ──────────────────────────────
+  const [emailResult, beehiivResult, driveLink] = await Promise.allSettled([
+    // 1. Email directo (nodemailer) a destinatarios manuales
+    recipients.length
+      ? transporter.sendMail({
+          from: `"Agente Político 🌐" <${process.env.EMAIL_FROM}>`,
+          to:   recipients.join(", "),
+          subject: `🌐 Newsletter Político — ${dateStr}`,
+          html,
+        })
+      : Promise.resolve(null),
+
+    // 2. Beehiiv — publica y manda a todos los suscriptores de la publicación
+    sendToBeehiiv(html, dateStr, metrics),
+
+    // 3. Google Drive backup
+    saveNewsletterToDrive(html, dateStr),
+  ]);
 
   markLinksAsSent(remaining.map(n => n.link));
-  console.log(`[Newsletter] Enviado a ${recipients.join(", ")} ✅`);
 
-  // Guardar en Google Drive (silencioso si no está configurado)
-  const driveLink = await saveNewsletterToDrive(html, dateStr);
-  return { ok: true, driveLink };
+  const emailOk     = emailResult.status === "fulfilled";
+  const beehiivOk   = beehiivResult.status === "fulfilled" && beehiivResult.value?.ok;
+  const beehiivData = beehiivResult.status === "fulfilled" ? beehiivResult.value : {};
+  const driveLinkVal = driveLink.status === "fulfilled" ? driveLink.value : null;
+
+  if (emailOk && recipients.length)
+    console.log(`[Newsletter] Email directo → ${recipients.join(", ")} ✅`);
+  if (beehiivOk)
+    console.log(`[Beehiiv] Newsletter publicado ✅ ${beehiivData.postUrl || ""}`);
+  if (!emailOk && !beehiivOk)
+    return { ok: false, reason: "all_channels_failed" };
+
+  return {
+    ok: true,
+    email: emailOk,
+    beehiiv: beehiivOk,
+    beehiivUrl: beehiivData.postUrl || null,
+    driveLink: driveLinkVal,
+  };
+}
+
+// ─── BEEHIIV INTEGRATION ─────────────────────────────────────────────────────
+/**
+ * Convierte el HTML del newsletter en body_content compatible con Beehiiv.
+ * Beehiiv strips <style> blocks pero mantiene style="" inline — nuestro HTML
+ * ya usa 100% inline styles, así que funciona directo.
+ * Solo extraemos el <body> interior para no mandar el wrapper completo.
+ */
+function extractBeehiivBody(fullHtml) {
+  const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  return bodyMatch ? bodyMatch[1].trim() : fullHtml;
+}
+
+async function sendToBeehiiv(html, dateStr, metrics) {
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
+  if (!apiKey || !pubId) {
+    console.log("[Beehiiv] No configurado (faltan BEEHIIV_API_KEY o BEEHIIV_PUBLICATION_ID)");
+    return { ok: false, reason: "not_configured" };
+  }
+
+  const nota = getNotaEditorial();
+  const subtitle = nota
+    ? nota.substring(0, 280)
+    : `${metrics.totalNews} noticias · ${metrics.high} alertas · ${metrics.totalRegions} regiones · Sin sesgo editorial`;
+
+  const bodyContent = extractBeehiivBody(html);
+
+  const payload = {
+    title: `🌐 Newsletter Político — ${dateStr}`,
+    subtitle,
+    body_content: bodyContent,
+    status: "confirmed",           // published + sends email to subscribers
+    email_settings: {
+      subject_line: `🌐 Newsletter Político — ${dateStr}`,
+      preview_text: subtitle,
+      from_name: "Agente Político · Teo Palatini",
+    },
+    web_settings: {
+      slug: `newsletter-${dateStr.replace(/\s/g, "-").toLowerCase()}`,
+      hidden: false,
+    },
+    content_tags: ["política", "economía", "finanzas", "argentina"],
+  };
+
+  try {
+    console.log("[Beehiiv] Publicando newsletter...");
+    const res = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}/posts`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(20_000),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`[Beehiiv] Error ${res.status}:`, JSON.stringify(json).slice(0, 300));
+      return { ok: false, reason: `http_${res.status}`, detail: json };
+    }
+
+    const postId  = json?.data?.id || "unknown";
+    const postUrl = json?.data?.web_url || `https://your-pub.beehiiv.com/p/${postId}`;
+    console.log(`[Beehiiv] ✅ Publicado — ID: ${postId}`);
+    return { ok: true, postId, postUrl };
+  } catch (err) {
+    console.error("[Beehiiv] Error de red:", err.message);
+    return { ok: false, reason: "network_error", detail: err.message };
+  }
+}
+
+async function getBeehiivStats() {
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
+  if (!apiKey || !pubId) return null;
+  try {
+    const res = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}`, {
+      headers: { "Authorization": `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.data || null;
+  } catch { return null; }
 }
 
 // ─── GOOGLE DRIVE ─────────────────────────────────────────────────────────────
@@ -1571,21 +1685,85 @@ bot.command("all", async ctx => {
 });
 
 bot.command("newsletter", async ctx => {
-  await ctx.reply("📧 Generando y enviando newsletter...");
+  await ctx.reply("📧 Generando y enviando newsletter \\(email \\+ Beehiiv\\)\\.\\.\\.", SEND_OPTS);
   try {
     const result = await sendNewsletter();
-    const targetEmail = escapeMd(process.env.EMAIL_TO || process.env.EMAIL_FROM || "(sin definir)");
     if (result.ok) {
-      await ctx.reply(`✅ Newsletter enviado a *${targetEmail}*`, SEND_OPTS);
+      let msg = "✅ *Newsletter enviado*\n\n";
+      if (result.email) msg += `📬 Email directo: enviado\n`;
+      if (result.beehiiv) {
+        msg += `🐝 Beehiiv: publicado y enviado a suscriptores`;
+        if (result.beehiivUrl) msg += `\n🔗 [Ver en web](${result.beehiivUrl})`;
+      } else {
+        msg += `🐝 Beehiiv: no configurado o falló`;
+      }
+      if (result.driveLink) msg += `\n💾 [Google Drive](${result.driveLink})`;
+      await ctx.reply(msg, SEND_OPTS);
     } else if (result.reason === "no_fresh_news") {
-      await ctx.reply("ℹ️ No hay noticias nuevas para enviar dentro de la ventana anti\\-duplicados\\.", SEND_OPTS);
+      await ctx.reply("ℹ️ No hay noticias nuevas dentro de la ventana anti\\-duplicados\\.", SEND_OPTS);
     } else {
-      await ctx.reply("⚠️ Email no configurado\\. Falta EMAIL\\_FROM, EMAIL\\_PASS y EMAIL\\_TO en el \\.env", SEND_OPTS);
+      await ctx.reply("⚠️ No se pudo enviar por ningún canal\\. Verificá EMAIL y BEEHIIV en Fly\\.io secrets\\.", SEND_OPTS);
     }
   } catch (e) {
     console.error("[Newsletter] Error:", e.message);
-    await ctx.reply(`❌ Error al enviar el newsletter: ${escapeMd(e.message || "desconocido")}`, SEND_OPTS);
+    await ctx.reply(`❌ Error: ${escapeMd(e.message || "desconocido")}`, SEND_OPTS);
   }
+});
+
+bot.command("beehiiv", async ctx => {
+  const sub = ctx.message.text.replace(/^\/beehiiv\s*/i, "").trim().toLowerCase();
+
+  // /beehiiv status
+  if (!sub || sub === "status") {
+    const apiKey = process.env.BEEHIIV_API_KEY;
+    const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
+    if (!apiKey || !pubId) {
+      return ctx.reply(
+        "🐝 *Beehiiv — No configurado*\n\n" +
+        "Necesitás agregar dos secrets en Fly\\.io:\n" +
+        "`fly secrets set BEEHIIV_API_KEY=tu_key`\n" +
+        "`fly secrets set BEEHIIV_PUBLICATION_ID=pub_xxx`\n\n" +
+        "Encontrás ambos en *beehiiv\\.com → Settings → API*",
+        SEND_OPTS
+      );
+    }
+    await ctx.reply("🔍 Verificando conexión con Beehiiv\\.\\.\\.", SEND_OPTS);
+    const pub = await getBeehiivStats();
+    if (!pub) {
+      return ctx.reply("❌ No se pudo conectar con Beehiiv\\. Verificá el API key y Publication ID\\.", SEND_OPTS);
+    }
+    const subs = pub.stats?.active_subscriptions ?? pub.active_subscriptions ?? "—";
+    const name = escapeMd(pub.name || "tu publicación");
+    await ctx.reply(
+      `🐝 *Beehiiv — Conectado* ✅\n\n` +
+      `📰 Publicación: *${name}*\n` +
+      `👥 Suscriptores activos: *${subs}*\n` +
+      `🆔 Publication ID: \`${escapeMd(pubId)}\`\n\n` +
+      `El newsletter llega a Beehiiv automáticamente cada día a las 8 AM\\.`,
+      SEND_OPTS
+    );
+    return;
+  }
+
+  // /beehiiv send — fuerza publicación ahora
+  if (sub === "send") {
+    await ctx.reply("🐝 Publicando en Beehiiv ahora mismo\\.\\.\\.", SEND_OPTS);
+    try {
+      const result = await sendNewsletter();
+      if (result.beehiiv) {
+        let msg = `✅ *Publicado en Beehiiv*\n`;
+        if (result.beehiivUrl) msg += `🔗 [Ver post](${result.beehiivUrl})`;
+        await ctx.reply(msg, SEND_OPTS);
+      } else {
+        await ctx.reply("⚠️ No se pudo publicar en Beehiiv\\. Revisá los secrets en Fly\\.io\\.", SEND_OPTS);
+      }
+    } catch (e) {
+      await ctx.reply(`❌ Error: ${escapeMd(e.message)}`, SEND_OPTS);
+    }
+    return;
+  }
+
+  await ctx.reply("📖 Uso: `/beehiiv status` o `/beehiiv send`", SEND_OPTS);
 });
 
 bot.command("test_email", async ctx => {
