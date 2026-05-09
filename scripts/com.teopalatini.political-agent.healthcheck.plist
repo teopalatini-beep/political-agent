@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.teopalatini.political-agent.healthcheck</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/usr/local/bin/political-agent-healthcheck.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/tmp</string>
+
+    <key>UserName</key>
+    <string>teopalatini</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>/Users/teopalatini</string>
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+      <key>MAX_STALE_SEC</key>
+      <string>600</string>
+      <key>HEARTBEAT_PATH</key>
+      <string>/tmp/political-agent-heartbeat.json</string>
+      <key>CHECK_LOG_PATH</key>
+      <string>/tmp/political-agent-healthcheck.log</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/teopalatini/Documents/political-agent/logs/healthcheck.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/teopalatini/Documents/political-agent/logs/healthcheck.err.log</string>
+  </dict>
+</plist>

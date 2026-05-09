@@ -1,2 +1,8 @@
 .env
 node_modules/
+logs/
+*.log
+Texto de Terminal.txt
+examen-coursera-89a4a9e12717.json
+latest_newsletter_preview.html
+seen_links.json

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.teopalatini.political-agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/teopalatini/.nvm/versions/node/v22.19.0/bin/node</string>
+      <string>/Users/teopalatini/Documents/political-agent/server.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/teopalatini/Documents/political-agent</string>
+
+    <key>UserName</key>
+    <string>teopalatini</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOME</key>
+      <string>/Users/teopalatini</string>
+      <key>PATH</key>
+      <string>/Users/teopalatini/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+      <key>HEARTBEAT_COMPAT_PATH</key>
+      <string>/tmp/political-agent-heartbeat.json</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/teopalatini/Documents/political-agent/logs/daemon.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/teopalatini/Documents/political-agent/logs/daemon.err.log</string>
+  </dict>
+</plist>

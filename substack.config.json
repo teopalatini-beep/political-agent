@@ -1,0 +1,15 @@
+{
+  "publication_name": "Agente Politico",
+  "author_name": "Teo Palatini",
+  "default_audience": "lectores interesados en politica internacional y mercados",
+  "default_cta": "Si te sirvio este analisis, compartilo y respondeme con tu lectura.",
+  "default_tone": "analitico, claro y sin alarmismo",
+  "content_pillars": [
+    "geopolitica",
+    "economia politica",
+    "riesgo pais",
+    "energia y commodities",
+    "elecciones y poder"
+  ],
+  "max_sources_in_draft": 6
+}

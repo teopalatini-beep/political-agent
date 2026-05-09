@@ -4,7 +4,16 @@
   "description": "Agente político 24/7 100% GRATUITO",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "smoke": "bash scripts/smoke-check.sh",
+    "weekly:health": "bash scripts/weekly-healthcheck.sh",
+    "scan:secrets": "bash scripts/scan-secrets.sh",
+    "regression:sprint5": "bash scripts/regression-sprint5.sh",
+    "substack:draft": "node scripts/substack-draft.js",
+    "substack:draft:weekly": "node scripts/substack-draft.js --format=weekly --topic=Panorama politico semanal",
+    "substack:draft:deep": "node scripts/substack-draft.js --format=deep-dive",
+    "install:daemon": "bash scripts/install-launchdaemon.sh",
+    "install:logrotate": "bash scripts/install-logrotate.sh"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
