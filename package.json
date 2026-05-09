@@ -12,6 +12,11 @@
     "substack:draft": "node scripts/substack-draft.js",
     "substack:draft:weekly": "node scripts/substack-draft.js --format=weekly --topic=Panorama politico semanal",
     "substack:draft:deep": "node scripts/substack-draft.js --format=deep-dive",
+    "affiliate:score": "node scripts/affiliate-score.js",
+    "affiliate:content": "node scripts/affiliate-content-pack.js --days=7",
+    "affiliate:emails": "node scripts/affiliate-email-funnel.js",
+    "affiliate:queue": "node scripts/affiliate-agent-runner.js",
+    "affiliate:kpi": "node scripts/affiliate-kpi-summary.js",
     "install:daemon": "bash scripts/install-launchdaemon.sh",
     "install:logrotate": "bash scripts/install-logrotate.sh"
   },

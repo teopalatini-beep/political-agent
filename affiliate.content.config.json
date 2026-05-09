@@ -1,0 +1,32 @@
+{
+  "brand": {
+    "name": "Your Faceless Media Brand",
+    "voice": "direct, practical, no hype",
+    "defaultDisclosure": "#ad #affiliate I may earn a commission from qualifying purchases."
+  },
+  "channels": [
+    "tiktok",
+    "instagram_reels",
+    "facebook_reels"
+  ],
+  "posting": {
+    "daysPerWeek": 5,
+    "videosPerDay": 1
+  },
+  "mix": {
+    "software_ai": 0.7,
+    "fitness_weightloss": 0.3
+  },
+  "hooks": [
+    "Stop doing this if you want {outcome}",
+    "I tested 3 options and only one worked for {outcome}",
+    "Most people waste money on this before learning {insight}",
+    "Use this simple setup to save time on {painPoint}",
+    "If you only have 15 minutes, do this for {outcome}"
+  ],
+  "ctas": [
+    "Comment \"guide\" and check link in bio.",
+    "Full setup is in my free checklist, link in bio.",
+    "If you want the exact tools, open the link in my bio."
+  ]
+}

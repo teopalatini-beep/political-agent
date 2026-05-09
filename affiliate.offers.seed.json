@@ -1,0 +1,285 @@
+{
+  "generated_for": "US English audience",
+  "niches": [
+    "software_ai",
+    "fitness_weightloss"
+  ],
+  "weights": {
+    "demand": 0.3,
+    "margin": 0.25,
+    "contentEase": 0.2,
+    "policySafety": 0.15,
+    "seasonality": 0.1
+  },
+  "digital_offers": [
+    {
+      "id": "cb_ai_creator_bundle",
+      "network": "ClickBank",
+      "name": "AI Creator Bundle",
+      "niche": "software_ai",
+      "tracking_url": "REPLACE_WITH_HOPLINK",
+      "notes": "Verify real marketplace listing and refund profile before launch.",
+      "scores": {
+        "demand": 4,
+        "margin": 5,
+        "contentEase": 5,
+        "policySafety": 4,
+        "seasonality": 4
+      }
+    },
+    {
+      "id": "cb_productivity_masterclass",
+      "network": "ClickBank",
+      "name": "Productivity Masterclass",
+      "niche": "software_ai",
+      "tracking_url": "REPLACE_WITH_HOPLINK",
+      "notes": "Ideal for tutorial and workflow style reels.",
+      "scores": {
+        "demand": 4,
+        "margin": 4,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "cb_metabolism_reset_program",
+      "network": "ClickBank",
+      "name": "Metabolism Reset Program",
+      "niche": "fitness_weightloss",
+      "tracking_url": "REPLACE_WITH_HOPLINK",
+      "notes": "Use conservative claims and clear disclaimers.",
+      "scores": {
+        "demand": 5,
+        "margin": 5,
+        "contentEase": 4,
+        "policySafety": 3,
+        "seasonality": 4
+      }
+    },
+    {
+      "id": "hotmart_ai_automation_bootcamp",
+      "network": "Hotmart",
+      "name": "AI Automation Bootcamp",
+      "niche": "software_ai",
+      "tracking_url": "REPLACE_WITH_HOTMART_LINK",
+      "notes": "Prioritize offers with English-native checkout and support.",
+      "scores": {
+        "demand": 4,
+        "margin": 4,
+        "contentEase": 5,
+        "policySafety": 4,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "hotmart_home_fitness_blueprint",
+      "network": "Hotmart",
+      "name": "Home Fitness Blueprint",
+      "niche": "fitness_weightloss",
+      "tracking_url": "REPLACE_WITH_HOTMART_LINK",
+      "notes": "Screen for strong VSL quality and realistic promises.",
+      "scores": {
+        "demand": 4,
+        "margin": 4,
+        "contentEase": 4,
+        "policySafety": 3,
+        "seasonality": 4
+      }
+    }
+  ],
+  "amazon_products": [
+    {
+      "id": "amz_ai_note_taking_tablet",
+      "name": "Digital Note-Taking Tablet",
+      "category": "Electronics",
+      "niche": "software_ai",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "80-140",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 5,
+        "policySafety": 5,
+        "seasonality": 4
+      }
+    },
+    {
+      "id": "amz_usb_c_dock",
+      "name": "USB-C Multiport Dock",
+      "category": "Computers",
+      "niche": "software_ai",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "35-90",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 5,
+        "margin": 3,
+        "contentEase": 5,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_blue_light_glasses",
+      "name": "Blue Light Blocking Glasses",
+      "category": "Health",
+      "niche": "software_ai",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "15-40",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_ergonomic_keyboard",
+      "name": "Ergonomic Mechanical Keyboard",
+      "category": "Computers",
+      "niche": "software_ai",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "40-120",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_portable_monitor",
+      "name": "Portable External Monitor",
+      "category": "Computers",
+      "niche": "software_ai",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "80-180",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 4
+      }
+    },
+    {
+      "id": "amz_walkpad_treadmill",
+      "name": "Under-Desk Walkpad Treadmill",
+      "category": "Fitness",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "220-450",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 5,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 4
+      }
+    },
+    {
+      "id": "amz_adjustable_dumbbells",
+      "name": "Adjustable Dumbbell Set",
+      "category": "Fitness",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "90-300",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 5,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_resistance_band_set",
+      "name": "Resistance Band Set",
+      "category": "Fitness",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "15-45",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 5,
+        "margin": 3,
+        "contentEase": 5,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_smart_scale",
+      "name": "Bluetooth Smart Body Scale",
+      "category": "Health",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "20-80",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_meal_prep_containers",
+      "name": "Meal Prep Container Pack",
+      "category": "Kitchen",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "12-35",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 5,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_blender_personal",
+      "name": "Personal Smoothie Blender",
+      "category": "Kitchen",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "25-90",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    },
+    {
+      "id": "amz_foam_roller",
+      "name": "Deep Tissue Foam Roller",
+      "category": "Fitness",
+      "niche": "fitness_weightloss",
+      "asin": "REPLACE_ASIN",
+      "priceRangeUSD": "15-40",
+      "tracking_url": "REPLACE_WITH_AMAZON_SPECIAL_LINK",
+      "scores": {
+        "demand": 4,
+        "margin": 3,
+        "contentEase": 4,
+        "policySafety": 5,
+        "seasonality": 5
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "workflow": {
+    "mode": "semi_automatic",
+    "requireHumanApproval": true,
+    "highRiskTopicsRequireApproval": true
+  },
+  "platforms": {
+    "tiktok": {
+      "enabled": true,
+      "postingWindowLocal": "12:00-20:00",
+      "apiMode": "manual_or_official_api"
+    },
+    "instagram_reels": {
+      "enabled": true,
+      "postingWindowLocal": "11:00-19:00",
+      "apiMode": "official_graph_api"
+    },
+    "facebook_reels": {
+      "enabled": true,
+      "postingWindowLocal": "13:00-21:00",
+      "apiMode": "official_meta_api_or_scheduler"
+    }
+  },
+  "defaultCaptionBlocks": {
+    "disclosure": "#ad #affiliate I may earn a commission from qualifying purchases.",
+    "cta": "Comment \"guide\" and check link in bio."
+  }
+}

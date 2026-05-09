@@ -1,0 +1,46 @@
+{
+  "sequence_name": "5-email affiliate starter sequence",
+  "emails": [
+    {
+      "day": 0,
+      "type": "delivery",
+      "subject": "Here is your starter checklist",
+      "goal": "Deliver lead magnet and set expectation for the journey.",
+      "body_template": "Hey {{first_name}},\n\nHere is your checklist: {{lead_magnet_url}}\n\nStart with step 1 today. Tomorrow I will send you the fastest setup to get your first content live.\n\n{{disclosure}}\n",
+      "body": "Hey {{ first_name | default: 'there' }},\n\nHere is your checklist: REPLACE_LEAD_MAGNET_URL\n\nStart with step 1 today. Tomorrow I will send you the fastest setup to get your first content live.\n\nDisclosure: I may earn a commission from qualifying purchases.\n"
+    },
+    {
+      "day": 1,
+      "type": "quick_win",
+      "subject": "The 20-minute setup that saves hours",
+      "goal": "Provide tactical value and pre-frame tool recommendation.",
+      "body_template": "Hey {{first_name}},\n\nUse this 20-minute setup:\n1) one hook template\n2) one editing template\n3) one CTA\n\nIf you want the same stack I use, start here: {{offer_url_primary}}\n\n{{disclosure}}\n",
+      "body": "Hey {{ first_name | default: 'there' }},\n\nUse this 20-minute setup:\n1) one hook template\n2) one editing template\n3) one CTA\n\nIf you want the same stack I use, start here: REPLACE_PRIMARY_OFFER_URL\n\nDisclosure: I may earn a commission from qualifying purchases.\n"
+    },
+    {
+      "day": 3,
+      "type": "case_story",
+      "subject": "Case breakdown: from random posts to consistent clicks",
+      "goal": "Increase trust with process-based case narrative.",
+      "body_template": "Hey {{first_name}},\n\nThe big shift was not posting more, it was posting with one repeatable format.\n\nI broke the workflow here: {{offer_url_primary}}\n\n{{disclosure}}\n",
+      "body": "Hey {{ first_name | default: 'there' }},\n\nThe big shift was not posting more, it was posting with one repeatable format.\n\nI broke the workflow here: REPLACE_PRIMARY_OFFER_URL\n\nDisclosure: I may earn a commission from qualifying purchases.\n"
+    },
+    {
+      "day": 5,
+      "type": "comparison",
+      "subject": "Tool A vs Tool B: which one is worth it?",
+      "goal": "Help decision and handle objections.",
+      "body_template": "Hey {{first_name}},\n\nShort version:\n- Tool A: easier for beginners\n- Tool B: better if you already have traffic\n\nMy pick for most starters: {{offer_url_primary}}\nBackup option: {{offer_url_backup}}\n\n{{disclosure}}\n",
+      "body": "Hey {{ first_name | default: 'there' }},\n\nShort version:\n- Tool A: easier for beginners\n- Tool B: better if you already have traffic\n\nMy pick for most starters: REPLACE_PRIMARY_OFFER_URL\nBackup option: REPLACE_BACKUP_OFFER_URL\n\nDisclosure: I may earn a commission from qualifying purchases.\n"
+    },
+    {
+      "day": 7,
+      "type": "offer",
+      "subject": "If you want to implement this this week",
+      "goal": "Drive direct conversion with ethical urgency.",
+      "body_template": "Hey {{first_name}},\n\nIf you are serious about implementing this now, use this link and start with the exact setup:\n{{offer_url_primary}}\n\nIf this is not your fit, use the backup here:\n{{offer_url_backup}}\n\n{{disclosure}}\n",
+      "body": "Hey {{ first_name | default: 'there' }},\n\nIf you are serious about implementing this now, use this link and start with the exact setup:\nREPLACE_PRIMARY_OFFER_URL\n\nIf this is not your fit, use the backup here:\nREPLACE_BACKUP_OFFER_URL\n\nDisclosure: I may earn a commission from qualifying purchases.\n"
+    }
+  ],
+  "generatedAt": "2026-05-09T14:23:11.835Z"
+}
