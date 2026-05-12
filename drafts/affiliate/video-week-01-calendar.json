@@ -1,0 +1,58 @@
+[
+  {
+    "day": "Monday",
+    "video": "Top 3 CRM mistakes",
+    "primary_platforms": ["TikTok", "Instagram Reels"],
+    "secondary_platforms": ["YouTube Shorts"],
+    "local_posting_time": "18:30",
+    "cta": "Read full comparison in bio."
+  },
+  {
+    "day": "Tuesday",
+    "video": "Notion vs ClickUp in 30 seconds",
+    "primary_platforms": ["TikTok", "YouTube Shorts"],
+    "secondary_platforms": ["Instagram Reels"],
+    "local_posting_time": "12:30",
+    "cta": "See the full side-by-side in bio."
+  },
+  {
+    "day": "Wednesday",
+    "video": "Automate invoices in 20 seconds",
+    "primary_platforms": ["Instagram Reels", "TikTok"],
+    "secondary_platforms": ["YouTube Shorts"],
+    "local_posting_time": "19:00",
+    "cta": "Use the checklist in bio."
+  },
+  {
+    "day": "Thursday",
+    "video": "Best stack under $50/month",
+    "primary_platforms": ["TikTok", "Instagram Reels"],
+    "secondary_platforms": ["YouTube Shorts"],
+    "local_posting_time": "13:00",
+    "cta": "Get the exact stack from the link in bio."
+  },
+  {
+    "day": "Friday",
+    "video": "I tested this tool for 7 days",
+    "primary_platforms": ["TikTok", "YouTube Shorts"],
+    "secondary_platforms": ["Instagram Reels"],
+    "local_posting_time": "18:00",
+    "cta": "Read the full verdict in bio."
+  },
+  {
+    "day": "Saturday",
+    "video": "Best alternatives to expensive tools",
+    "primary_platforms": ["Instagram Reels", "TikTok"],
+    "secondary_platforms": ["YouTube Shorts"],
+    "local_posting_time": "11:30",
+    "cta": "See alternative stacks in bio."
+  },
+  {
+    "day": "Sunday",
+    "video": "SaaS buying checklist",
+    "primary_platforms": ["TikTok", "Instagram Reels"],
+    "secondary_platforms": ["YouTube Shorts"],
+    "local_posting_time": "17:30",
+    "cta": "Download free checklist in bio."
+  }
+]
