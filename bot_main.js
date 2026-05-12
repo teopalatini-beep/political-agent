@@ -972,6 +972,77 @@ function getImportance(title, desc) {
   return { level: "baja", emoji: "🟢" };
 }
 
+// ─── "POR QUÉ IMPORTA" ───────────────────────────────────────────────────────
+// Genera una línea de contexto para noticias de importancia alta.
+// Usa patrones del título/descripción para inferir el impacto concreto.
+function getPorQueImporta(title, desc) {
+  const text = `${title} ${desc || ""}`.toLowerCase();
+
+  // Patrones: [regex, template de impacto]
+  const patterns = [
+    [/guerra|ataque|bombardeo|misil|cohete|ofensiva|invasion|ocupaci/,
+      "Escala el conflicto armado — puede afectar mercados de energía y cadenas de suministro globales."],
+    [/sancion|embargo|bloqueo/,
+      "Las sanciones económicas impactan directamente el comercio y el tipo de cambio."],
+    [/eleccion|voto|ballotage|referendum|candidat/,
+      "Define el rumbo político del país por los próximos años."],
+    [/inflaci|precio|costo de vida|ipc|indec/,
+      "Afecta el poder adquisitivo de millones de personas en tiempo real."],
+    [/reservas|banco central|tipo de cambio|dolar|peso/,
+      "Señal directa sobre la estabilidad cambiaria y el acceso a divisas."],
+    [/imf|fmi|fondo monetario|deuda|bono|default/,
+      "Condiciona el financiamiento del Estado y la política económica de corto plazo."],
+    [/muer|falleci|victim|masacre|atentado/,
+      "Crisis humanitaria activa — seguimiento internacional garantizado."],
+    [/trump|biden|milei|lula|xi jinping|putin|zelensky/,
+      "Decisión de liderazgo global con efecto inmediato en relaciones internacionales."],
+    [/recesion|crisis economica|quiebra|desempleo|cierre/,
+      "Indicador de contracción económica — puede anticipar medidas de emergencia."],
+    [/petroleo|gas|energia|litio|commodit/,
+      "Mueve los precios de materias primas estratégicas para Argentina y la región."],
+    [/corrupci|juicio|condena|arresto|fiscal|imputad/,
+      "Impacto político directo — puede redefinir el equilibrio de poder institucional."],
+    [/acuerdo|tratado|alianza|cumbre|g20|g7|mercosur/,
+      "Nuevo marco geopolítico o comercial con efectos de mediano plazo."],
+    [/terremoto|inundaci|incendi|desastre|emergencia/,
+      "Crisis de emergencia activa — requiere respuesta humanitaria inmediata."],
+    [/ia|inteligencia artificial|tecnologia|regulacion tech/,
+      "Define el marco regulatorio de la tecnología más disruptiva de la década."],
+  ];
+
+  for (const [regex, impact] of patterns) {
+    if (regex.test(text)) return impact;
+  }
+
+  // Fallback: extraer la segunda oración de la descripción si existe
+  if (desc) {
+    const sentences = desc.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 30);
+    if (sentences.length >= 2) return sentences[1] + ".";
+  }
+  return null;
+}
+
+// ─── NÚMERO DEL DÍA ──────────────────────────────────────────────────────────
+// Extrae el dato numérico más impactante del conjunto de noticias del día.
+function getNumeroDelDia(allNewsByRegion) {
+  const flat = Object.values(allNewsByRegion).flat();
+  const numRegex = /(\d[\d.,]*\s*(?:%|millones?|billones?|mil millones?|USD|km²?|personas?|muertos?|heridos?|votos?|años?))/i;
+
+  for (const n of flat.filter(x => x.importance.level === "alta")) {
+    const text = `${n.title} ${n.description || ""}`;
+    const match = text.match(numRegex);
+    if (match) {
+      // Extraer contexto: hasta 80 chars alrededor del número
+      const idx = text.indexOf(match[0]);
+      const start = Math.max(0, idx - 30);
+      const end = Math.min(text.length, idx + match[0].length + 50);
+      const context = text.slice(start, end).trim().replace(/^[^A-Za-z0-9]/, "");
+      return { numero: match[0], contexto: context, fuente: n.source };
+    }
+  }
+  return null;
+}
+
 function getRelevanceScore(item) {
   const importanceWeight = { alta: 300, media: 200, baja: 100 }[item.importance.level] || 50;
   const title = (item.title || "").trim();
@@ -1108,6 +1179,19 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
     </div>
   </div>`;
 
+  // ── Número del día ────────────────────────────────────────────────────────
+  const numeroDia = getNumeroDelDia(allNewsByRegion);
+  const numeroDiaHTML = numeroDia ? `
+  <div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid #1e3a5f;border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="font-size:28px;line-height:1;">📌</div>
+    <div>
+      <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">El número del día</div>
+      <div style="font-size:18px;font-weight:900;color:#1e3a5f;margin-bottom:3px;">${numeroDia.numero}</div>
+      <div style="font-size:13px;color:#374151;line-height:1.5;">${numeroDia.contexto}</div>
+      <div style="font-size:10px;color:#9ca3af;margin-top:4px;">📰 ${numeroDia.fuente}</div>
+    </div>
+  </div>` : "";
+
   // ── Alertas del día ───────────────────────────────────────────────────────
   const alertCard = alerts.length ? (() => {
     const rows = alerts.map(n => {
@@ -1116,15 +1200,20 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
         const cut = desc.lastIndexOf(". ", 240);
         desc = cut > 60 ? desc.substring(0, cut + 1) : desc.substring(0, 240) + "…";
       }
+      const porQueImporta = getPorQueImporta(n.title, n.description);
       const body = desc
         ? `<strong style="color:#fff;">${n.title}:</strong> <span style="color:#fca5a5;">${desc}</span>`
         : `<strong style="color:#fff;">${n.title}</strong>`;
+      const porQueHTML = porQueImporta
+        ? `<div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.2);border-radius:5px;font-size:12px;color:#fef3c7;font-style:italic;line-height:1.5;"><strong style="color:#fbbf24;">Por qué importa:</strong> ${porQueImporta}</div>`
+        : "";
       return `
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.1);vertical-align:top;font-size:13.5px;line-height:1.65;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#fca5a5;margin-bottom:5px;">${EMOJIS[n.region] || ""} ${REGION_NAMES[n.region] || n.region}</div>
           ${body}
-          <div style="margin-top:5px;"><a href="${n.link}" style="color:#fbbf24;text-decoration:none;font-size:12px;font-weight:600;">Ver noticia →</a><span style="font-size:11px;color:#f87171;margin-left:8px;">📰 ${n.source}</span></div>
+          ${porQueHTML}
+          <div style="margin-top:6px;"><a href="${n.link}" style="color:#fbbf24;text-decoration:none;font-size:12px;font-weight:600;">Ver noticia →</a><span style="font-size:11px;color:#f87171;margin-left:8px;">📰 ${n.source}</span></div>
         </td>
       </tr>`;
     }).join("");
@@ -1158,10 +1247,15 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
       const body = desc
         ? `${importanceDot}<strong style="color:#111827;">${n.title}:</strong> <span style="color:#6b7280;">${desc}</span>`
         : `${importanceDot}<strong style="color:#111827;">${n.title}</strong>`;
+      const porQueRegion = n.importance.level === "alta" ? getPorQueImporta(n.title, n.description) : null;
+      const porQueRegionHTML = porQueRegion
+        ? `<div style="margin-top:5px;padding:5px 9px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:3px;font-size:11.5px;color:#78350f;font-style:italic;line-height:1.5;"><strong style="color:#d97706;">Por qué importa:</strong> ${porQueRegion}</div>`
+        : "";
       return `
       <tr>
         <td style="padding:11px 0;border-bottom:${i < news.length - 1 ? "1px solid #f3f4f6" : "none"};vertical-align:top;font-size:13.5px;line-height:1.65;">
           <span style="font-size:16px;margin-right:5px;">${emoji}</span>${body}
+          ${porQueRegionHTML}
           <div style="margin-top:4px;"><a href="${n.link}" style="color:#2563eb;text-decoration:none;font-size:12px;font-weight:600;">Leer más →</a><span style="font-size:11px;color:#9ca3af;margin-left:8px;">📰 ${n.source}</span></div>
         </td>
       </tr>`;
@@ -1245,6 +1339,9 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
       ${catIndex}
     </div>
   </div>
+
+  <!-- ══ NÚMERO DEL DÍA ══ -->
+  ${numeroDiaHTML}
 
   <!-- ══ FINANZAS ══ -->
   ${financial ? buildFinancialHTML(financial) : ""}
