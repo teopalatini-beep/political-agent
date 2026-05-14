@@ -2003,6 +2003,20 @@ function startDailyNewsletter() {
 // ─── INICIO ───────────────────────────────────────────────────────────────────
 startHeartbeat();
 
+// ─── HEALTH CHECK SERVER (requerido por Fly.io para no matar el proceso) ─────
+// Sin esto Fly.io manda SIGTERM al proceso porque no detecta actividad.
+const http = require("http");
+const HEALTH_PORT = Number(process.env.PORT || 8080);
+const healthServer = http.createServer((req, res) => {
+  const hb = (() => { try { return JSON.parse(fs.readFileSync(CONFIG.HEARTBEAT_PATH, "utf8")); } catch { return null; } })();
+  const status = hb?.status || "ok";
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ status, uptime: Math.floor(process.uptime()), pid: process.pid }));
+});
+healthServer.listen(HEALTH_PORT, () => {
+  console.log(`[Health] Servidor HTTP escuchando en :${HEALTH_PORT}`);
+});
+
 bot.launch().then(async () => {
   console.log("🤖 Bot iniciado correctamente");
   logConfigurationStatus();
