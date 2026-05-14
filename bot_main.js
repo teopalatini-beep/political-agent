@@ -1,5 +1,5 @@
 const { Telegraf } = require("telegraf");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 const cron = require("node-cron");
 const fs = require("fs");
 const path = require("path");
@@ -1377,42 +1377,29 @@ function buildNewsletterHTML(allNewsByRegion, financial = null) {
 }
 
 // ─── NEWSLETTER — ENVÍO ───────────────────────────────────────────────────────
-function createTransporter() {
-  const emailFrom = String(process.env.EMAIL_FROM || "").trim();
-  const emailUser = String(process.env.EMAIL_USER || emailFrom).trim();
-  let emailPass = String(process.env.EMAIL_PASS || "").trim();
-  if (!emailFrom || !emailPass) return null;
-
-  // Gmail muestra app passwords con espacios (xxxx xxxx xxxx xxxx).
-  // Nodemailer necesita el valor continuo sin espacios.
-  if (/@gmail\.com$/i.test(emailUser)) {
-    emailPass = emailPass
-      .replace(/\s+/g, "")
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toLowerCase();
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: emailUser, pass: emailPass },
-  });
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
 }
 
 async function verifyEmailTransport() {
-  const transporter = createTransporter();
-  if (!transporter) return { ok: false, reason: "email_not_configured" };
+  const resend = getResendClient();
+  if (!resend) return { ok: false, reason: "email_not_configured" };
   try {
-    await transporter.verify();
+    // Verificar que el API key es válido haciendo una llamada mínima
+    const { error } = await resend.domains.list();
+    if (error) return { ok: false, reason: "resend_auth_failed", message: error.message };
     return { ok: true };
   } catch (e) {
-    return { ok: false, reason: "smtp_auth_failed", message: e.message || "unknown" };
+    return { ok: false, reason: "resend_error", message: e.message || "unknown" };
   }
 }
 
 async function sendNewsletter() {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.log("[Newsletter] Sin configuración de email — omitido");
+  const resend = getResendClient();
+  if (!resend) {
+    console.log("[Newsletter] Sin RESEND_API_KEY — omitido");
     return { ok: false, reason: "email_not_configured" };
   }
 
@@ -1451,13 +1438,13 @@ async function sendNewsletter() {
     return { ok: false, reason: "no_recipients" };
   }
 
-  // ── Envío paralelo: email directo + Beehiiv ──────────────────────────────
+  // ── Envío paralelo: Resend + Beehiiv ─────────────────────────────────────
   const [emailResult, beehiivResult, driveLink] = await Promise.allSettled([
-    // 1. Email directo (nodemailer) a destinatarios manuales
+    // 1. Email vía Resend
     recipients.length
-      ? transporter.sendMail({
-          from: `"Agente Político 🌐" <${process.env.EMAIL_FROM}>`,
-          to:   recipients.join(", "),
+      ? resend.emails.send({
+          from: "Agente Político <onboarding@resend.dev>",
+          to:   recipients,
           subject: `🌐 Newsletter Político — ${dateStr}`,
           html,
         })
