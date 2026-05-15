@@ -1994,44 +1994,9 @@ function newsletterAlreadySentToday() {
 }
 
 function startDailyNewsletter() {
-  const expr = getNewsletterCronExpression();
-  if (!cron.validate(expr)) {
-    console.error(`[Newsletter] Expresión cron inválida: ${expr}`);
-    return;
-  }
-
-  cron.schedule(expr, async () => {
-    console.log(`[Newsletter] Enviando newsletter diario (${CONFIG.NEWSLETTER_HOUR}:${CONFIG.NEWSLETTER_MINUTE})...`);
-    try {
-      const result = await sendNewsletter();
-      if (result.ok) {
-        markNewsletterSentToday();
-        if (TELEGRAM_CHAT_ID)
-          await sendToChat(TELEGRAM_CHAT_ID, "📧 *Newsletter diario enviado a tu email* ✅", SEND_OPTS);
-      }
-    } catch (e) { console.error("[Newsletter] Error en envío diario:", e.message); }
-  }, { timezone: CONFIG.TIMEZONE });
-
-  console.log(`[Newsletter] Programado — todos los días a las ${CONFIG.NEWSLETTER_HOUR}:${CONFIG.NEWSLETTER_MINUTE} (${CONFIG.TIMEZONE})`);
-
-  // ── Catch-up: si el proceso arrancó después de las 8 AM y no se envió hoy ──
-  const now = new Date();
-  const hour = Number(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: CONFIG.TIMEZONE }));
-  const scheduledHour = Number(CONFIG.NEWSLETTER_HOUR);
-
-  if (hour >= scheduledHour && hour < scheduledHour + 4 && !newsletterAlreadySentToday()) {
-    console.log(`[Newsletter] Catch-up: son las ${hour}h, el newsletter no se envió hoy — enviando ahora...`);
-    setTimeout(async () => {
-      try {
-        const result = await sendNewsletter();
-        if (result.ok) {
-          markNewsletterSentToday();
-          if (TELEGRAM_CHAT_ID)
-            await sendToChat(TELEGRAM_CHAT_ID, "📧 *Newsletter enviado (catch-up por reinicio)* ✅", SEND_OPTS);
-        }
-      } catch (e) { console.error("[Newsletter] Error en catch-up:", e.message); }
-    }, 15_000); // 15s para que el bot termine de inicializarse
-  }
+  // Newsletter diario migrado a GitHub Actions (workflow: newsletter.yml).
+  // El bot mantiene /newsletter para envío manual desde Telegram.
+  console.log(`[Newsletter] Envío automático delegado a GitHub Actions (8 AM ${CONFIG.TIMEZONE})`);
 }
 
 // ─── INICIO ───────────────────────────────────────────────────────────────────

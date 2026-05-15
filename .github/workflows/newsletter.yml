@@ -1,0 +1,36 @@
+name: Daily Newsletter
+
+on:
+  schedule:
+    # 8:00 AM Argentina (UTC-3) = 11:00 UTC
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Send newsletter
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+          BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
+          BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
+          TZ: America/Argentina/Buenos_Aires
+          DEDUP_WINDOW_HOURS: '48'
+          DEDUP_NEWSLETTER_ONLY: 'true'
+          MAX_ITEMS_PER_SOURCE_REGION: '3'
+          ALERTS_LIMIT: '6'
+        run: node scripts/send-newsletter.js
