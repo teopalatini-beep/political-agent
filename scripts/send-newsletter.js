@@ -537,6 +537,13 @@ async function saveNewsletterToDrive(html, dateStr) {
   } catch (e) { console.error("[GDrive] Error:", e.message); return null; }
 }
 
+// ─── RESEND CLIENT ───────────────────────────────────────────────────────────
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
+
 // ─── TELEGRAM NOTIFICATION ───────────────────────────────────────────────────
 async function notifyTelegram(message) {
   const token = process.env.TELEGRAM_BOT_TOKEN, chatId = process.env.TELEGRAM_CHAT_ID;
