@@ -1,31 +1,109 @@
 # Political Agent
 
-**Agente 24/7 que recopila, clasifica y distribuye noticias de política internacional, economía y mercados — vía Telegram, email y newsletter.**
+Agente 24/7 que monitorea política internacional, te avisa por Telegram cuando hay algo urgente, y cada mañana te manda un newsletter con el panorama (política + economía + mercados).
 
-## El problema que resuelve
+---
 
-Seguir la actualidad política y financiera global implica revisar decenas de fuentes dispersas cada día. Political Agent automatiza ese trabajo: monitorea RSS de medios internacionales, filtra el ruido, prioriza lo relevante y entrega un resumen curado — sin intervención manual — a través de un bot de Telegram y una newsletter diaria por email.
+## Qué estoy haciendo
 
-## Funcionalidades clave
+Estoy construyendo un **radar geopolítico personal** automatizado:
 
-- **Agregación multi-región**: RSS de medios como BBC, NPR, Euronews, DW, SCMP, NYT, Al Jazeera, Moscow Times, La Nación y Clarín, cubriendo EE.UU., Europa, China, Rusia, Medio Oriente, Brasil y Argentina — con fuentes de respaldo automáticas vía Google News si una fuente primaria falla.
-- **Clasificación automática por categoría**: cada noticia se etiqueta en Política Mundial, Política Argentina, Economía, Finanzas & Mercados, Inversiones o Deporte según coincidencia de palabras clave.
-- **Scoring de importancia**: detección de nivel de urgencia (alta/media/baja) por keywords (guerra, sanciones, elecciones, etc.), con generación automática de una línea de "por qué importa" para las noticias críticas.
-- **Datos de mercado en tiempo real**: cotizaciones de criptomonedas (CoinGecko), S&P 500 y ADRs argentinos (Twelve Data, con fallback a Yahoo Finance y Stooq) integradas en el newsletter.
-- **Bot de Telegram interactivo**: comandos para consultar noticias por región (`/usa`, `/europe`, etc.), cripto, acciones, gestionar destinatarios de email, forzar el envío del newsletter, ver preview HTML y chequear estado del sistema.
-- **Newsletter por email**: generación de HTML responsive con secciones por categoría, resumen de mercados y métricas del envío; envío vía Resend/Nodemailer y publicación opcional en Beehiiv.
-- **Deduplicación persistente**: normalización de URLs (elimina UTM/tracking) y ventana de 48 h para no repetir noticias ya enviadas.
-- **Generación de contenido editorial**: scripts para borradores de Substack y un pipeline de contenido de afiliados (scoring de ofertas, secuencias de email, calendario de videos) como capa de monetización adicional.
-- **Operación autónoma**: heartbeat de salud, LaunchDaemons para macOS, healthchecks, logrotate y despliegue continuo a Fly.io vía GitHub Actions.
+1. **Lee** feeds RSS de regiones clave (EE.UU., Europa, China, Rusia, Medio Oriente, Brasil, Argentina)
+2. **Puntúa** urgencia por palabras clave
+3. **Avisa** por Telegram digests y alertas
+4. **Arma** un newsletter HTML diario (política, economía, mercados) y lo manda por email
+5. **Opcional:** borradores de Substack y contenido de afiliados para revisar a mano (no publica solo)
 
-## Stack técnico
+No es un medio ni un analista humano: es un monitor que filtra ruido y te deja el resumen listo.
 
-- **Runtime**: Node.js (Telegraf para el bot de Telegram, node-cron para scheduling)
-- **Email**: Resend + Nodemailer, integración opcional con Beehiiv
-- **Datos**: RSS parsing manual (regex), Twelve Data API, CoinGecko API, Yahoo Finance / Stooq como fallback
-- **Infraestructura**: Docker, Fly.io (deploy continuo vía GitHub Actions), soporte para LaunchDaemon en macOS como entorno alternativo
-- **Persistencia**: almacenamiento en archivos JSON locales (sin base de datos externa)
+---
 
-## Arquitectura
+## Por qué lo estoy haciendo
 
-`server.js` actúa como *launcher*: en modo activo delega a `bot_main.js` (proceso principal con el bot de Telegram, scheduler del newsletter y toda la lógica de fetch/clasificación); en modo standby (`DISABLE_BOT=true`) solo mantiene un heartbeat, permitiendo correr una instancia primaria en Fly.io y una secundaria en reposo en local. Un workflow de GitHub Actions dispara el envío diario del newsletter (`scripts/send-newsletter.js`) de forma independiente al bot interactivo.
+Seguir política internacional a mano es imposible: demasiadas fuentes, demasiadas alertas falsas, y el “importante” se pierde entre el ruido.
+
+Quería algo que:
+
+- corra **solo**, todo el día
+- me avise **solo cuando importa**
+- me deje un **brief matutino** sin abrir 15 tabs
+- separe “leer el mundo” de “escribir contenido” (borradores aparte, con revisión humana)
+
+---
+
+## Beneficios
+
+| Beneficio | En la práctica |
+|---|---|
+| **Cobertura continua** | RSS + cron; no dependés de estar online |
+| **Señal vs ruido** | Scoring de urgencia antes de molestarte |
+| **Brief diario** | Newsletter con política + mercados |
+| **Canal inmediato** | Telegram para alertas |
+| **Humano al final** | Substack/afiliados = borradores, no auto-publish |
+
+---
+
+## Qué hace (y qué no)
+
+**Sí hace**
+- Monitorear feeds y armar digests
+- Alertas por Telegram
+- Newsletter diario por email
+- Healthchecks / smoke tests
+- Borradores opcionales (Substack / afiliados)
+
+**No hace**
+- Publicar en Substack o redes sin tu revisión
+- Reemplazar análisis editorial humano
+- Garantizar cobertura de *todas* las fuentes del mundo
+
+---
+
+## Cómo funciona
+
+```
+RSS feeds
+  → scoring de urgencia
+  → Telegram (alertas / digests)
+  → newsletter HTML matutino → email
+  → (opcional) borradores Substack / afiliados
+```
+
+Stack: Node.js, Telegraf, node-cron, nodemailer. Mercados vía APIs configurables. Deploy opcional en Fly.io / LaunchDaemons en macOS.
+
+---
+
+## Setup rápido
+
+```bash
+git clone https://github.com/teopalatini-beep/political-agent.git
+cd political-agent
+npm install
+cp .env.example .env
+# Completá TELEGRAM_*, EMAIL_*, y keys de mercados si las usás
+npm start
+```
+
+Scripts útiles:
+
+| Comando | Qué hace |
+|---|---|
+| `npm start` | Corre el bot |
+| `npm run smoke` | Smoke check |
+| `npm run weekly:health` | Healthcheck |
+| `npm run install:daemon` | Instala daemons 24/7 en macOS |
+
+El `.env` **nunca** se sube a git. No compartas tokens, chat IDs ni listas de destinatarios.
+
+---
+
+## Docs
+
+- [`OPERATIONS.md`](OPERATIONS.md) — instalación 24/7 y recovery
+- [`SUBSTACK_SPRINT6.md`](SUBSTACK_SPRINT6.md) — pipeline de borradores Substack
+
+---
+
+## Estado del proyecto
+
+En uso personal. El core es monitoreo + Telegram + newsletter; Substack y afiliados son extensiones opcionales con revisión humana.
