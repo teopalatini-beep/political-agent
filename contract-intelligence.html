@@ -4,268 +4,392 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contract Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,500&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--green:#123015;--orange:#D64000;--cream:#F8EADD;--ink:#212322;--teal:#4DB299;--mint:#E3F2CC;--grey:#6B6B6B}
+:root{
+  --green:#0E2A12;--green2:#183D1C;--orange:#D64000;--orange2:#FF6A2B;--cream:#F8EADD;--paper:#FCF8F1;
+  --ink:#1B1E1C;--mute:#6B6B63;--teal:#4DB299;--mint:#DDEFC4;
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --sans:"Bricolage Grotesque","Segoe UI",Helvetica,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#0b160c;font-family:"Clario","Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);overflow:hidden}
+html,body{height:100%;background:#070f08;font-family:var(--sans);color:var(--ink);overflow:hidden}
 #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-#stage{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none}
-.slide{position:absolute;inset:0;background:#fff;display:none;overflow:hidden;border-top:4px solid var(--orange)}
+#stage{width:1280px;height:720px;position:relative;transform-origin:center;flex:none;box-shadow:0 30px 90px #000a}
+
+/* ---------- slide base ---------- */
+.slide{position:absolute;inset:0;display:none;overflow:hidden;background:var(--paper);color:var(--ink)}
+.slide:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:.07;mix-blend-mode:multiply;pointer-events:none;z-index:5}
+.slide.dark:before{opacity:.12;mix-blend-mode:screen}
 .slide.active{display:block}
-.slide.dark{background:var(--green);border-top:0;color:#fff}
-.slide.mint{background:var(--mint);border-top:0}
-.kicker{position:absolute;left:56px;top:34px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
-h2.title{position:absolute;left:56px;top:62px;right:56px;font-size:34px;font-weight:400;line-height:1.2}
-.body{position:absolute;left:56px;right:56px;top:150px;bottom:90px}
-.num{position:absolute;left:56px;bottom:30px;font-size:12px;color:var(--orange);display:flex;align-items:center;gap:6px}
-.num:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--orange)}
-.logo{position:absolute;right:56px;bottom:22px;font-weight:700;font-size:15px;line-height:1;color:var(--ink);text-align:left}
-.logo small{display:block;font-weight:400}
-.dark .logo,.dark .num{color:#fff}
-.mint .logo{color:var(--ink)}
-ul{list-style:none}
-li{position:relative;padding-left:16px;margin:8px 0;font-size:18px}
-li:before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--orange)}
-.sm li{font-size:14px;margin:6px 0}
+.slide.dark{background:radial-gradient(900px 600px at 85% 0%,#1f5a27 0%,transparent 60%),radial-gradient(700px 500px at 0% 100%,#3a1a08 0%,transparent 60%),var(--green);color:#fff}
+
+/* reveal choreography */
+.slide.active .r{animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*80ms + 120ms)}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* chrome inside slide */
+.rail{position:absolute;left:0;top:0;bottom:0;width:56px;border-right:1px solid #1b1e1c18;display:flex;align-items:flex-end;justify-content:center;padding-bottom:36px}
+.rail span{writing-mode:vertical-rl;transform:rotate(180deg);font:500 11px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+.dark .rail{border-color:#fff2}.dark .rail span{color:#ffffff90}
+.ghost{position:absolute;right:40px;top:-30px;font:300 300px/1 var(--serif);color:transparent;-webkit-text-stroke:1.5px #d6400030;letter-spacing:-.05em;pointer-events:none;font-variation-settings:"opsz" 144}
+.kicker{position:absolute;left:112px;top:46px;font:500 12px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--orange);display:flex;align-items:center;gap:12px}
+.kicker:before{content:"";width:34px;height:2px;background:var(--orange);transform-origin:left;animation:grow .8s .1s both}
+h2.title{position:absolute;left:112px;top:78px;width:880px;font:300 44px/1.08 var(--serif);letter-spacing:-.02em;font-variation-settings:"opsz" 96}
+h2.title em{font-style:italic;color:var(--orange);font-weight:300}
+.body{position:absolute;left:112px;right:64px;top:222px;bottom:80px}
+.logo{position:absolute;right:64px;bottom:28px;font:700 14px/1 var(--sans);letter-spacing:-.01em;text-align:right;z-index:6}
+.logo small{display:block;font-weight:400;opacity:.7}
+.logo:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:8px}
+.pg{position:absolute;left:112px;bottom:30px;font:500 11px var(--mono);letter-spacing:.14em;color:var(--mute);z-index:6}
+.dark .pg{color:#fff9}
+
+/* ---------- components ---------- */
 .grid{display:grid;gap:16px}
-.card{background:var(--cream);padding:16px 18px;border-radius:2px}
-.card b{display:block;font-size:17px;margin-bottom:4px}
-.card span{font-size:14px;color:#444}
-.step{display:flex;gap:14px;align-items:flex-start}
-.badge{flex:none;width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
-.hdr{background:var(--green);color:#fff;padding:16px 18px}
-.hdr b{display:block;font-size:19px}.hdr span{font-size:13px;opacity:.85}
-.row{background:var(--cream);padding:14px 18px 14px 36px;font-size:16px;margin-top:10px;position:relative}
-.row:before{content:"";position:absolute;left:16px;top:50%;margin-top:-4px;width:8px;height:8px;border-radius:50%;background:var(--orange)}
-.col{background:var(--cream);padding:18px;min-height:300px;border-top:3px solid var(--orange)}
-.col h4{font-size:18px;margin-bottom:8px}
-.chev{background:var(--green);color:#fff;padding:18px 26px;font-weight:700;font-size:17px;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%,22px 50%);text-align:center}
-.chev.hot{background:var(--orange)}
-.circle{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-.circle.hot{background:var(--orange)}
-.callout{background:var(--green);color:#fff;padding:18px 24px;font-size:22px;font-weight:700}
-.callout small{display:block;font-size:13px;font-weight:400;margin-bottom:4px}
-.note{background:var(--cream);border-left:4px solid var(--orange);padding:12px 18px;font-size:15px}
-.kpi{background:var(--green);color:#fff;padding:22px;min-height:130px}
-.kpi.hot{background:var(--orange)}
-.kpi b{font-size:21px;display:block;margin-bottom:6px}.kpi span{font-size:14px;opacity:.9}
-.scale{display:grid;grid-template-columns:repeat(10,1fr)}
-.scale div{padding:14px 0;text-align:center;color:#fff;font-weight:700;background:var(--teal)}
+.card{position:relative;background:var(--cream);border:1px solid #1b1e1c14;padding:18px 20px 18px 84px;min-height:92px;transition:.25s}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 30px -14px #d6400055;border-color:var(--orange)}
+.card .n{position:absolute;left:18px;top:6px;font:italic 300 54px/1 var(--serif);color:var(--orange)}
+.card b{display:block;font:600 17px/1.2 var(--sans);margin-bottom:5px}
+.card span{font-size:13.5px;line-height:1.4;color:#4a4a44}
+
+.panel{border-top:3px solid var(--green)}
+.panel .hd{padding:16px 0 12px}
+.panel .hd b{font:400 24px/1.1 var(--serif);display:block}
+.panel .hd span{font:500 11px var(--mono);letter-spacing:.08em;color:var(--mute);text-transform:uppercase}
+.item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #1b1e1c1a;font-size:16px;transition:.2s}
+.item:hover{padding-left:10px;color:var(--orange)}
+.item i{font:normal 500 11px var(--mono);color:var(--orange);width:22px}
+
+.tile{position:relative;background:var(--cream);padding:22px 20px;min-height:290px;overflow:hidden;transition:.3s;border-bottom:4px solid var(--green)}
+.tile:hover{background:var(--green);color:#fff;transform:translateY(-6px)}
+.tile:hover li{color:#fff}
+.tile .big{position:absolute;right:-6px;top:-18px;font:italic 300 110px/1 var(--serif);color:#d640001f}
+.tile h4{font:400 26px/1.1 var(--serif);margin-bottom:16px;position:relative}
+ul{list-style:none}
+li{position:relative;padding-left:18px;margin:9px 0;font-size:15px;line-height:1.35}
+li:before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;background:var(--orange);transform:rotate(45deg)}
+li.b{font-size:18px}
+
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.stepbar{position:relative;background:var(--green);color:#fff;padding:20px 28px 20px 40px;font:600 17px/1.15 var(--sans);clip-path:polygon(0 0,calc(100% - 26px) 0,100% 50%,calc(100% - 26px) 100%,0 100%,26px 50%);margin-left:-14px}
+.stepbar:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 26px) 0,100% 50%,calc(100% - 26px) 100%,0 100%)}
+.stepbar.hot{background:var(--orange)}
+.stepbar small{display:block;font:500 10px var(--mono);letter-spacing:.2em;opacity:.7;margin-bottom:4px}
+.col{background:var(--cream);padding:18px;min-height:250px;margin:14px 8px 0 0;border-top:3px solid var(--orange)}
+.col h4{font:400 20px/1.15 var(--serif);margin-bottom:10px}
+.col li{font-size:13.5px}
+
+.cols3{display:grid;gap:56px;align-items:start}
+.cols3 h4{font:400 26px/1.1 var(--serif);margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--green)}
+.lead{font:italic 300 22px/1.35 var(--serif);color:#3a3a35}
+
+/* ia timeline */
+.tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:6px}
+.tl:before{content:"";position:absolute;left:5%;right:5%;top:41px;height:2px;background:linear-gradient(90deg,var(--orange),var(--orange2));transform-origin:left;animation:grow 1.4s .5s both}
+.tl .s{position:relative;text-align:center}
+.tl .dot{width:84px;height:84px;margin:0 auto 18px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font:italic 300 40px var(--serif);border:5px solid var(--paper);box-shadow:0 0 0 1px var(--green);animation:pop .6s both;animation-delay:calc(var(--i)*250ms + 500ms)}
+.tl .s:last-child .dot{background:var(--orange);box-shadow:0 0 0 1px var(--orange)}
+.tl b{font:600 17px var(--sans);display:block;margin-bottom:6px}
+.tl p{font-size:13.5px;line-height:1.4;color:#4a4a44}
+.result{position:absolute;left:0;right:0;bottom:0;background:var(--green);color:#fff;padding:22px 28px;display:flex;gap:24px;align-items:center;overflow:hidden}
+.result:after{content:"";position:absolute;right:-40px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(var(--orange),transparent 70%);opacity:.6}
+.result small{font:500 11px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--orange2)}
+.result b{font:300 25px/1.2 var(--serif);display:block;margin-top:2px}
+
+/* risk */
+.pts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pt{display:flex;align-items:center;gap:18px;background:var(--cream);padding:18px 22px;border:1px solid #1b1e1c14}
+.pt .v{font:italic 300 66px/1 var(--serif);min-width:62px;text-align:center}
+.pt .v small{display:block;font:500 10px var(--mono);letter-spacing:.16em;font-style:normal;color:var(--mute);text-transform:uppercase}
+.pt span{font-size:14.5px;line-height:1.4}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:10px}
+.scale div{padding:20px 0 12px;text-align:center;color:#fff;font:italic 300 30px/1 var(--serif);background:var(--teal);transform-origin:bottom;animation:pop .5s both;animation-delay:calc(var(--k)*70ms + 600ms)}
 .scale div.hi{background:var(--orange)}
-.big{font-size:44px;font-weight:700;color:var(--green)}
-/* chrome */
-#bar{position:fixed;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.55);color:#fff;font-size:13px;opacity:0;transition:.2s;z-index:10}
-#bar:hover{opacity:1}
-#bar button{background:#fff2;border:0;color:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font:inherit}
-#bar button:hover{background:#fff4}
-#grid{position:fixed;inset:0;background:#0b160c;display:none;overflow:auto;padding:24px;z-index:20;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.brace{display:grid;grid-template-columns:3fr 7fr;gap:4px;margin-top:8px}
+.brace div{border-top:3px solid var(--teal);padding-top:8px}.brace div+div{border-color:var(--orange)}
+.brace b{font:400 22px var(--serif);display:block}.brace span{font:500 11px var(--mono);letter-spacing:.06em;color:var(--mute)}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kpi{position:relative;background:var(--green);color:#fff;padding:24px 22px;min-height:132px;overflow:hidden;transition:.3s;cursor:default}
+.kpi:before{content:"";position:absolute;right:-30px;bottom:-30px;width:110px;height:110px;border:1px solid #fff3;border-radius:50%;box-shadow:0 0 0 18px #fff1,0 0 0 36px #fff0d}
+.kpi:hover{transform:translateY(-5px);background:var(--green2)}
+.kpi i{font:500 11px var(--mono);letter-spacing:.2em;color:var(--orange2);font-style:normal}
+.kpi b{display:block;font:400 25px/1.1 var(--serif);margin:8px 0 6px}
+.kpi span{font-size:13px;opacity:.8}
+.kpi.hot{background:var(--orange)}.kpi.hot i{color:#fff}.kpi.hot:hover{background:#ea4a0b}
+.note{margin-top:20px;padding:14px 20px;background:var(--cream);border-left:4px solid var(--orange);font:italic 300 18px/1.35 var(--serif)}
+
+/* cover & thanks */
+.cover h1{position:absolute;left:96px;top:170px;font:300 128px/.92 var(--serif);letter-spacing:-.045em;font-variation-settings:"opsz" 144;z-index:2}
+.cover h1 em{color:var(--orange2);font-style:italic}
+.cover .sub{position:absolute;left:100px;top:456px;width:520px;font:400 21px/1.4 var(--sans);color:#ffffffd0;z-index:2}
+.cover .date{position:absolute;left:100px;bottom:60px;font:500 12px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--orange2);z-index:2}
+.cover .doc{position:absolute;right:90px;top:90px;width:320px;height:430px;background:#fcf8f1;transform:rotate(5deg);padding:28px;box-shadow:0 40px 80px #0009;animation:drift 6s ease-in-out infinite;z-index:1}
+.cover .doc i{display:block;height:7px;background:#1b1e1c24;margin:11px 0;border-radius:4px}
+.cover .doc i.h{background:#1b1e1c;width:55%;height:11px;margin-bottom:22px}
+.cover .doc i.f{background:var(--orange);opacity:.9}
+.cover .doc i.ok{background:var(--teal)}
+.cover .doc .stamp{position:absolute;right:-26px;bottom:44px;background:var(--orange);color:#fff;padding:12px 18px;font:italic 300 24px var(--serif);transform:rotate(-8deg);box-shadow:0 12px 30px #0007}
+.cover .doc .stamp small{display:block;font:500 9px var(--mono);letter-spacing:.2em}
+.thanks h1{position:absolute;left:96px;bottom:70px;font:300 190px/.9 var(--serif);letter-spacing:-.05em;color:var(--green);font-variation-settings:"opsz" 144}
+.thanks h1 em{color:var(--orange)}
+.web{position:absolute;right:-60px;top:-80px;width:620px;opacity:.55;animation:drift 9s ease-in-out infinite}
+
+.agenda{position:absolute;left:112px;right:64px;top:200px;display:grid;grid-template-columns:1fr 1fr;gap:0 56px}
+.agenda div{display:flex;gap:20px;align-items:baseline;padding:22px 0;border-top:1px solid #1b1e1c30;font:300 27px/1.15 var(--serif);transition:.25s}
+.agenda div:hover{color:var(--orange);padding-left:10px}
+.agenda i{font:500 12px var(--mono);color:var(--orange);font-style:normal;letter-spacing:.1em}
+
+/* ---------- player chrome ---------- */
+#prog{position:fixed;left:0;top:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--orange2));width:0;z-index:50;transition:width .4s}
+#bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%) translateY(20px);display:flex;align-items:center;gap:6px;background:#0c1a0dd9;backdrop-filter:blur(10px);color:#fff;font:500 12px var(--mono);padding:6px 10px;border-radius:40px;opacity:0;transition:.25s;z-index:40}
+body:hover #bar{opacity:.0}#bar:hover{opacity:1;transform:translateX(-50%)}
+#bar button{background:transparent;border:0;color:#fff;padding:7px 12px;border-radius:30px;cursor:pointer;font:inherit}
+#bar button:hover{background:#ffffff22}
+#bar #count{min-width:64px;text-align:center;color:var(--orange2)}
+#grid{position:fixed;inset:0;background:#070f08f2;display:none;overflow:auto;padding:36px;z-index:60;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;align-content:start}
 #grid.on{display:grid}
-#grid .th{position:relative;width:100%;aspect-ratio:16/9;background:#fff;overflow:hidden;cursor:pointer;border:2px solid transparent}
-#grid .th:hover{border-color:var(--orange)}
+#grid .th{position:relative;aspect-ratio:16/9;overflow:hidden;cursor:pointer;outline:2px solid transparent;transition:.2s}
+#grid .th:hover{outline-color:var(--orange);transform:scale(1.03)}
 #grid .th .in{width:1280px;height:720px;transform-origin:0 0;position:absolute;pointer-events:none}
-body.edit .slide *[contenteditable]{outline:1px dashed #d6400055}
-#badge{position:fixed;top:10px;right:10px;background:var(--orange);color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;display:none;z-index:30}
+#grid .th .in *{animation:none!important}
+#grid .slide{display:block}
+#badge{position:fixed;top:12px;right:12px;background:var(--orange);color:#fff;padding:6px 12px;border-radius:4px;font:500 11px var(--mono);letter-spacing:.1em;display:none;z-index:70}
 body.edit #badge{display:block}
+body.edit [contenteditable]{outline:1px dashed #d6400066;cursor:text}
 </style>
 </head>
 <body>
+<div id="prog"></div>
 <div id="viewport"><div id="stage">
 
 <!-- 1 PORTADA -->
-<section class="slide dark">
-  <svg style="position:absolute;left:0;top:0" width="520" height="130" fill="none" stroke="#D64000" stroke-width="2"><path d="M0 60C80 20 160 10 240 40"/><circle cx="240" cy="40" r="6" fill="#D64000"/><path d="M0 100H120" /><circle cx="90" cy="100" r="5" fill="#D64000"/></svg>
-  <div style="position:absolute;left:120px;top:190px;font-size:64px;line-height:1.1;font-weight:300">Contract<br><span style="color:var(--orange)">Intelligence</span></div>
-  <div style="position:absolute;left:120px;top:420px;font-size:20px">Guía de uso del sitio para solicitantes y equipo legal</div>
-  <div style="position:absolute;left:120px;top:560px;font-size:14px">Octubre 2026</div>
-  <div class="logo">Thomson<small>Reuters</small></div>
+<section class="slide dark cover">
+  <svg style="position:absolute;inset:0" width="1280" height="720" fill="none"><g stroke="#FF6A2B" stroke-width="1.5" opacity=".6"><path d="M-10 640C220 600 380 690 560 650S900 560 1290 640"/><path d="M-10 670C240 640 400 720 580 685S920 600 1290 670" opacity=".4"/></g></svg>
+  <div class="r" style="--i:0;position:absolute;left:100px;top:96px;font:500 12px var(--mono);letter-spacing:.3em;color:#ffffff99">GUÍA DE USO · HIGHQ</div>
+  <h1 class="r" style="--i:1">Contract<br><em>Intelligence</em></h1>
+  <p class="sub r" style="--i:3">Guía de uso del sitio para solicitantes y equipo legal</p>
+  <div class="date r" style="--i:4">Octubre 2026</div>
+  <div class="doc r" style="--i:2">
+    <i class="h"></i><i></i><i></i><i class="ok"></i><i></i><i class="f"></i><i></i><i style="width:70%"></i><i class="ok"></i><i></i><i class="f"></i><i style="width:40%"></i><i></i><i></i>
+    <div class="stamp"><small>RIESGO</small>Bajo · 2 pts</div>
+  </div>
+  <div class="logo" style="color:#fff">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 2 AGENDA -->
 <section class="slide">
-  <h2 class="title" style="left:96px;top:100px;font-size:38px;color:var(--orange)">Agenda</h2>
-  <div style="position:absolute;left:300px;top:100px;bottom:120px;border-left:2px solid var(--orange);padding-left:36px">
-    <ul style="font-size:20px">
-      <li>Legal Intake: solicitudes y seguimiento</li>
-      <li>Main dashboard del equipo legal</li>
-      <li>Archivos: del ingreso a la firma</li>
-      <li>Informes</li>
-      <li>Tareas, calendario y equipo legal</li>
-      <li>Extracción con IA y puntuación de riesgo</li>
-      <li>KPI de análisis de contratos</li>
-    </ul>
+  <div class="rail"><span>Contract Intelligence</span></div><div class="ghost">02</div>
+  <div class="kicker">Agenda</div>
+  <h2 class="title">Qué vamos a <em>recorrer</em></h2>
+  <div class="agenda">
+    <div class="r" style="--i:0"><i>01</i>Legal Intake: solicitudes y seguimiento</div>
+    <div class="r" style="--i:1"><i>02</i>Main dashboard del equipo legal</div>
+    <div class="r" style="--i:2"><i>03</i>Archivos: del ingreso a la firma</div>
+    <div class="r" style="--i:3"><i>04</i>Informes</div>
+    <div class="r" style="--i:4"><i>05</i>Tareas, calendario y equipo legal</div>
+    <div class="r" style="--i:5"><i>06</i>Extracción con IA y puntuación de riesgo</div>
+    <div class="r" style="--i:6"><i>07</i>KPI de análisis de contratos</div>
   </div>
-  <div class="num">2</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">02 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 3 FORMULARIO -->
 <section class="slide">
+  <div class="rail"><span>Legal Intake · Formulario</span></div><div class="ghost">03</div>
   <div class="kicker">Legal Intake · Formulario</div>
-  <h2 class="title">El solicitante carga el contrato y sus datos en un solo formulario</h2>
-  <div class="body grid" style="grid-template-columns:1fr 1fr;grid-auto-rows:min-content">
-    <div class="card step"><div class="badge">1</div><div><b>Unidad de negocio</b><span>Departamento que solicita, por ejemplo Ventas</span></div></div>
-    <div class="card step"><div class="badge">2</div><div><b>Archivo del contrato</b><span>El documento que Legal debe revisar</span></div></div>
-    <div class="card step"><div class="badge">3</div><div><b>Nombre del vendor</b><span>Contraparte del contrato, por ejemplo Thomson Reuters</span></div></div>
-    <div class="card step"><div class="badge">4</div><div><b>Tipo de solicitud</b><span>Por ejemplo, revisión de contratos</span></div></div>
-    <div class="card step"><div class="badge">5</div><div><b>Descripción breve</b><span>Qué necesita el solicitante y por qué</span></div></div>
-    <div class="card step"><div class="badge">6</div><div><b>Fecha de inicio</b><span>Inicio previsto del contrato</span></div></div>
-    <div class="card step"><div class="badge">7</div><div><b>Fecha de vencimiento solicitada</b><span>Opcional: plazo deseado para la respuesta</span></div></div>
-    <div class="card step"><div class="badge">8</div><div><b>Documento adjunto</b><span>Archivos relacionados, por ejemplo un poder</span></div></div>
+  <h2 class="title">El solicitante carga el contrato y sus datos en <em>un solo formulario</em></h2>
+  <div class="body grid" style="grid-template-columns:1fr 1fr;grid-auto-rows:min-content;top:236px">
+    <div class="card r" style="--i:0"><div class="n">1</div><b>Unidad de negocio</b><span>Departamento que solicita, por ejemplo Ventas</span></div>
+    <div class="card r" style="--i:1"><div class="n">2</div><b>Archivo del contrato</b><span>El documento que Legal debe revisar</span></div>
+    <div class="card r" style="--i:2"><div class="n">3</div><b>Nombre del vendor</b><span>Contraparte del contrato, por ejemplo Thomson Reuters</span></div>
+    <div class="card r" style="--i:3"><div class="n">4</div><b>Tipo de solicitud</b><span>Por ejemplo, revisión de contratos</span></div>
+    <div class="card r" style="--i:4"><div class="n">5</div><b>Descripción breve</b><span>Qué necesita el solicitante y por qué</span></div>
+    <div class="card r" style="--i:5"><div class="n">6</div><b>Fecha de inicio</b><span>Inicio previsto del contrato</span></div>
+    <div class="card r" style="--i:6"><div class="n">7</div><b>Fecha de vencimiento solicitada</b><span>Opcional: plazo deseado para la respuesta</span></div>
+    <div class="card r" style="--i:7"><div class="n">8</div><b>Documento adjunto</b><span>Archivos relacionados, por ejemplo un poder</span></div>
   </div>
-  <div class="num">3</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">03 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 4 PANELES -->
 <section class="slide">
+  <div class="rail"><span>Legal Intake · Paneles</span></div><div class="ghost">04</div>
   <div class="kicker">Legal Intake · Paneles de seguimiento</div>
-  <h2 class="title">Los paneles siguen cada solicitud hasta la aprobación y la firma</h2>
-  <div class="body grid" style="grid-template-columns:repeat(3,1fr);align-items:start">
-    <div><div class="hdr"><b>Solicitudes</b><span>Cuántas solicitudes llegan a Legal</span></div>
-      <div class="row">Total de solicitudes legales</div><div class="row">Solicitudes pendientes</div><div class="row">Mis solicitudes pendientes</div></div>
-    <div><div class="hdr"><b>Aprobación de contratos</b><span>Quién debe aprobar cada contrato</span></div>
-      <div class="row">Todos los contratos</div><div class="row">Mis solicitudes por aprobar</div><div class="row">Esperando aprobación del administrador</div></div>
-    <div><div class="hdr"><b>Estado de la firma</b><span>En qué punto está la firma</span></div>
-      <div class="row">Enviados a firma</div><div class="row">Listos para firmar</div><div class="row">Firmados</div><div class="row">Rechazados para firma</div></div>
+  <h2 class="title">Los paneles siguen cada solicitud hasta la <em>aprobación y la firma</em></h2>
+  <div class="body grid" style="grid-template-columns:repeat(3,1fr);gap:40px;align-items:start;top:236px">
+    <div class="panel r" style="--i:0"><div class="hd"><b>Solicitudes</b><span>Cuántas llegan a Legal</span></div>
+      <div class="item"><i>01</i>Total de solicitudes legales</div><div class="item"><i>02</i>Solicitudes pendientes</div><div class="item"><i>03</i>Mis solicitudes pendientes</div></div>
+    <div class="panel r" style="--i:1"><div class="hd"><b>Aprobación de contratos</b><span>Quién debe aprobar cada contrato</span></div>
+      <div class="item"><i>01</i>Todos los contratos</div><div class="item"><i>02</i>Mis solicitudes por aprobar</div><div class="item"><i>03</i>Esperando aprobación del administrador</div></div>
+    <div class="panel r" style="--i:2"><div class="hd"><b>Estado de la firma</b><span>En qué punto está la firma</span></div>
+      <div class="item"><i>01</i>Enviados a firma</div><div class="item"><i>02</i>Listos para firmar</div><div class="item"><i>03</i>Firmados</div><div class="item"><i>04</i>Rechazados para firma</div></div>
   </div>
-  <div class="num">4</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">04 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 5 DASHBOARD -->
 <section class="slide">
+  <div class="rail"><span>Main dashboard</span></div><div class="ghost">05</div>
   <div class="kicker">Main dashboard · Espacio del equipo legal</div>
-  <h2 class="title">El dashboard reúne accesos, novedades y tareas del equipo legal</h2>
-  <div class="body grid" style="grid-template-columns:repeat(4,1fr);align-items:stretch">
-    <div class="col"><h4>Accesos directos</h4><ul class="sm"><li>Análisis de contratos</li><li>Resumen de consultas</li><li>Análisis de documentos</li><li>Tareas del equipo legal</li></ul></div>
-    <div class="col"><h4>Equipo</h4><ul class="sm"><li>Quién integra el equipo legal</li></ul></div>
-    <div class="col"><h4>Novedades</h4><ul class="sm"><li>Últimas actualizaciones</li><li>Documentos ingresados</li><li>Actividad reciente del Automation Engine y de los usuarios</li></ul></div>
-    <div class="col"><h4>Tareas</h4><ul class="sm"><li>Tareas pendientes</li><li>Tareas de los próximos 30 días</li></ul></div>
+  <h2 class="title">El dashboard reúne accesos, novedades y <em>tareas del equipo</em></h2>
+  <div class="body grid" style="grid-template-columns:repeat(4,1fr);top:236px">
+    <div class="tile r" style="--i:0"><div class="big">a</div><h4>Accesos directos</h4><ul><li>Análisis de contratos</li><li>Resumen de consultas</li><li>Análisis de documentos</li><li>Tareas del equipo legal</li></ul></div>
+    <div class="tile r" style="--i:1"><div class="big">b</div><h4>Equipo</h4><ul><li>Quién integra el equipo legal</li></ul></div>
+    <div class="tile r" style="--i:2"><div class="big">c</div><h4>Novedades</h4><ul><li>Últimas actualizaciones</li><li>Documentos ingresados</li><li>Actividad reciente del Automation Engine y de los usuarios</li></ul></div>
+    <div class="tile r" style="--i:3"><div class="big">d</div><h4>Tareas</h4><ul><li>Tareas pendientes</li><li>Tareas de los próximos 30 días</li></ul></div>
   </div>
-  <div class="num">5</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">05 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 6 ARCHIVOS -->
 <section class="slide">
+  <div class="rail"><span>Archivos · Contract Intelligence</span></div><div class="ghost">06</div>
   <div class="kicker">Archivos · Carpeta Contract Intelligence</div>
-  <h2 class="title">Cada contrato avanza por carpetas, de la solicitud a la firma</h2>
-  <div class="body">
-    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:6px">
-      <div class="chev">Solicitud de contratos</div><div class="chev">Repositorio principal</div><div class="chev">Revisión y negociación</div><div class="chev hot">Contratos firmados</div>
+  <h2 class="title">Cada contrato avanza por carpetas, <em>de la solicitud a la firma</em></h2>
+  <div class="body" style="top:226px">
+    <div class="flow r" style="--i:0">
+      <div class="stepbar"><small>ETAPA 1</small>Solicitud de contratos</div>
+      <div class="stepbar"><small>ETAPA 2</small>Repositorio principal</div>
+      <div class="stepbar"><small>ETAPA 3</small>Revisión y negociación</div>
+      <div class="stepbar hot"><small>ETAPA 4</small>Contratos firmados</div>
     </div>
-    <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-top:14px">
-      <div class="col"><h4>Aquí llegan los documentos ingresados por Legal Intake</h4><ul class="sm"><li>La IA usa una biblioteca de prompts para revisar el documento</li><li>Extrae la información y lo envía a la siguiente etapa</li></ul></div>
-      <div class="col"><h4>Carpetas inteligentes que se completan solas</h4><ul class="sm"><li>Todos los contratos</li><li>Pendientes de clasificación: aún sin clasificar</li><li>Renovaciones: contratos en estado para renovar</li></ul></div>
-      <div class="col"><h4>Contratos en manos de Legal</h4><ul class="sm"><li>Contratos enviados a aprobar</li></ul></div>
-      <div class="col"><h4>Destino final del contrato</h4><ul class="sm"><li>Contratos con la firma completa</li></ul></div>
+    <div class="flow">
+      <div class="col r" style="--i:1"><h4>Aquí llegan los documentos ingresados por Legal Intake</h4><ul><li>La IA usa una biblioteca de prompts para revisar el documento</li><li>Extrae la información y lo envía a la siguiente etapa</li></ul></div>
+      <div class="col r" style="--i:2"><h4>Carpetas inteligentes que se completan solas</h4><ul><li>Todos los contratos</li><li>Pendientes de clasificación: aún sin clasificar</li><li>Renovaciones: contratos en estado para renovar</li></ul></div>
+      <div class="col r" style="--i:3"><h4>Contratos en manos de Legal</h4><ul><li>Contratos enviados a aprobar</li></ul></div>
+      <div class="col r" style="--i:4"><h4>Destino final del contrato</h4><ul><li>Contratos con la firma completa</li></ul></div>
     </div>
-    <p style="font-size:12px;color:var(--grey);margin-top:12px">La carpeta Outlook existe en el sitio, pero hoy no se usa.</p>
+    <p class="r" style="--i:5;font:500 11px var(--mono);color:var(--mute);margin-top:14px;letter-spacing:.04em">* La carpeta Outlook existe en el sitio, pero hoy no se usa.</p>
   </div>
-  <div class="num">6</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">06 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 7 INFORMES -->
 <section class="slide">
+  <div class="rail"><span>Informes</span></div><div class="ghost">07</div>
   <div class="kicker">Informes</div>
-  <h2 class="title">Informes agrupa vistas de contratos, casos, tareas y resúmenes</h2>
-  <div class="body grid" style="grid-template-columns:1fr 1.2fr 1.4fr;gap:40px">
-    <div><h4 style="font-size:17px">Para qué sirve</h4><p style="font-size:15px;margin-top:8px">Consultar la información del sitio con vistas ya armadas.</p></div>
-    <div><h4 style="font-size:17px">Vistas de informes</h4><ul><li>Información de contratos</li><li>Casos</li><li>Tareas</li></ul></div>
-    <div><h4 style="font-size:17px">Vistas de resumen de contrato</h4><ul><li>Borrador</li><li>Resumen completo</li><li>Por carpeta</li><li>Contratos en general</li></ul></div>
+  <h2 class="title">Informes agrupa vistas de contratos, casos, tareas y <em>resúmenes</em></h2>
+  <div class="body cols3" style="grid-template-columns:1fr 1.1fr 1.3fr;top:240px">
+    <div class="r" style="--i:0"><h4>Para qué sirve</h4><p class="lead">Consultar la información del sitio con vistas ya armadas.</p></div>
+    <div class="r" style="--i:1"><h4>Vistas de informes</h4><ul><li class="b">Información de contratos</li><li class="b">Casos</li><li class="b">Tareas</li></ul></div>
+    <div class="r" style="--i:2"><h4>Vistas de resumen de contrato</h4><ul><li class="b">Borrador</li><li class="b">Resumen completo</li><li class="b">Por carpeta</li><li class="b">Contratos en general</li></ul></div>
   </div>
-  <div class="num">7</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">07 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 8 TAREAS -->
 <section class="slide">
+  <div class="rail"><span>Tareas · Calendario · Equipo</span></div><div class="ghost">08</div>
   <div class="kicker">Tareas, calendario y equipo legal</div>
-  <h2 class="title">Las tareas llegan solas al equipo legal al ingresar un documento</h2>
-  <div class="body grid" style="grid-template-columns:1fr 1.3fr 1.3fr;gap:40px">
-    <div><h4 style="font-size:17px">Para qué sirve</h4><p style="font-size:15px;margin-top:8px">Organizar el trabajo del equipo legal sin asignarlo a mano.</p></div>
-    <div><h4 style="font-size:17px">Tareas</h4><ul><li>Se crean automáticamente al ingresar un documento</li><li>Se asignan al Legal Team: todas las personas del equipo legal</li><li>Contract internal review: revisiones internas del equipo legal</li></ul></div>
-    <div><h4 style="font-size:17px">Calendario</h4><ul><li>Tareas y categoría general</li><li>Mis borradores y favoritos</li><li>Solicitudes asignadas a mí</li></ul>
-      <h4 style="font-size:17px;margin-top:18px">Equipo legal y administración</h4><ul><li>Equipo legal: quiénes participan</li><li>Administración del sitio: solo para administradores</li></ul></div>
+  <h2 class="title">Las tareas llegan solas al equipo legal al <em>ingresar un documento</em></h2>
+  <div class="body cols3" style="grid-template-columns:.9fr 1.3fr 1.3fr;top:240px">
+    <div class="r" style="--i:0"><h4>Para qué sirve</h4><p class="lead">Organizar el trabajo del equipo legal sin asignarlo a mano.</p></div>
+    <div class="r" style="--i:1"><h4>Tareas</h4><ul><li>Se crean automáticamente al ingresar un documento</li><li>Se asignan al Legal Team: todas las personas del equipo legal</li><li>Contract internal review: revisiones internas del equipo legal</li></ul></div>
+    <div class="r" style="--i:2"><h4>Calendario</h4><ul><li>Tareas y categoría general</li><li>Mis borradores y favoritos</li><li>Solicitudes asignadas a mí</li></ul>
+      <h4 style="margin-top:22px">Equipo legal y administración</h4><ul><li>Equipo legal: quiénes participan</li><li>Administración del sitio: solo para administradores</li></ul></div>
   </div>
-  <div class="num">8</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">08 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 9 IA -->
 <section class="slide">
+  <div class="rail"><span>Beneficio · Inteligencia artificial</span></div><div class="ghost">09</div>
   <div class="kicker">Beneficio · Inteligencia artificial</div>
-  <h2 class="title">La IA extrae y clasifica los datos clave de cada contrato</h2>
-  <div class="body">
-    <div style="position:relative">
-      <div style="position:absolute;left:12%;right:12%;top:32px;border-top:2px solid var(--orange)"></div>
-      <div class="grid" style="grid-template-columns:repeat(4,1fr);position:relative;text-align:center">
-        <div><div class="circle">1</div><b>Metadatos de archivo</b><p style="font-size:14px;margin-top:6px">El sitio guarda los datos de cada contrato como metadatos</p></div>
-        <div><div class="circle">2</div><b>Set de preguntas</b><p style="font-size:14px;margin-top:6px">La IA responde un set de preguntas sobre cada contrato</p></div>
-        <div><div class="circle">3</div><b>Extracción y clasificación</b><p style="font-size:14px;margin-top:6px">Extrae la información más relevante y clasifica el contrato</p></div>
-        <div><div class="circle hot">4</div><b>Puntuación de riesgo</b><p style="font-size:14px;margin-top:6px">Puntúa cada cláusula y calcula el riesgo del contrato</p></div>
-      </div>
+  <h2 class="title">La IA extrae y clasifica los <em>datos clave</em> de cada contrato</h2>
+  <div class="body" style="top:236px">
+    <div class="tl">
+      <div class="s r" style="--i:0"><div class="dot" style="--i:0">1</div><b>Metadatos de archivo</b><p>El sitio guarda los datos de cada contrato como metadatos</p></div>
+      <div class="s r" style="--i:1"><div class="dot" style="--i:1">2</div><b>Set de preguntas</b><p>La IA responde un set de preguntas sobre cada contrato</p></div>
+      <div class="s r" style="--i:2"><div class="dot" style="--i:2">3</div><b>Extracción y clasificación</b><p>Extrae la información más relevante y clasifica el contrato</p></div>
+      <div class="s r" style="--i:3"><div class="dot" style="--i:3">4</div><b>Puntuación de riesgo</b><p>Puntúa cada cláusula y calcula el riesgo del contrato</p></div>
     </div>
-    <div class="callout" style="position:absolute;left:0;right:0;bottom:0"><small>Resultado</small>Cada contrato queda clasificado y con su puntuación de riesgo de forma automática.</div>
+    <div class="result r" style="--i:6"><small>Resultado</small><b>Cada contrato queda clasificado y con su puntuación de riesgo de forma automática.</b></div>
   </div>
-  <div class="num">9</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">09 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 10 RIESGO -->
 <section class="slide">
+  <div class="rail"><span>Beneficio · Puntuación de riesgo</span></div><div class="ghost">10</div>
   <div class="kicker">Beneficio · Puntuación de riesgo</div>
-  <h2 class="title">Cada cláusula que no cumple lo esperado suma 1 punto de riesgo</h2>
-  <div class="body">
-    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big">0</div><small>punto</small></div><span style="font-size:15px">La cláusula está y cumple lo que espera el equipo legal</span></div>
-      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big" style="color:var(--orange)">1</div><small>punto</small></div><span style="font-size:15px">La cláusula falta o no cumple lo esperado</span></div>
-      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big">Σ</div><small>total</small></div><span style="font-size:15px">La suma de puntos es la puntuación de riesgo del contrato</span></div>
+  <h2 class="title">Cada cláusula que no cumple lo esperado suma <em>1 punto</em> de riesgo</h2>
+  <div class="body" style="top:236px">
+    <div class="pts">
+      <div class="pt r" style="--i:0"><div class="v">0<small>punto</small></div><span>La cláusula está y cumple lo que espera el equipo legal</span></div>
+      <div class="pt r" style="--i:1"><div class="v" style="color:var(--orange)">1<small>punto</small></div><span>La cláusula falta o no cumple lo esperado</span></div>
+      <div class="pt r" style="--i:2"><div class="v">Σ<small>total</small></div><span>La suma de puntos es la puntuación de riesgo del contrato</span></div>
     </div>
-    <h4 style="font-size:14px;margin:28px 0 8px">Escala de riesgo por contrato (puntos)</h4>
-    <div class="scale"><div>1</div><div>2</div><div>3</div><div class="hi">4</div><div class="hi">5</div><div class="hi">6</div><div class="hi">7</div><div class="hi">8</div><div class="hi">9</div><div class="hi">10</div></div>
-    <div style="display:flex;margin-top:10px"><div style="width:30%"><b>Riesgo bajo</b><br><span style="font-size:14px">De 1 a 3 puntos</span></div><div><b style="color:var(--orange)">Riesgo alto</b><br><span style="font-size:14px">Más de 3 y hasta 10 puntos</span></div></div>
-    <p style="font-size:13px;margin-top:30px">Desde los KPI se accede al resumen de los contratos de cada nivel de riesgo.</p>
+    <p class="r" style="--i:3;font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-top:30px">Escala de riesgo por contrato (puntos)</p>
+    <div class="scale"><div style="--k:0">1</div><div style="--k:1">2</div><div style="--k:2">3</div><div class="hi" style="--k:3">4</div><div class="hi" style="--k:4">5</div><div class="hi" style="--k:5">6</div><div class="hi" style="--k:6">7</div><div class="hi" style="--k:7">8</div><div class="hi" style="--k:8">9</div><div class="hi" style="--k:9">10</div></div>
+    <div class="brace r" style="--i:8"><div><b>Riesgo bajo</b><span>DE 1 A 3 PUNTOS</span></div><div><b style="color:var(--orange)">Riesgo alto</b><span>MÁS DE 3 Y HASTA 10 PUNTOS</span></div></div>
+    <p class="r" style="--i:9;font:italic 300 16px var(--serif);color:var(--mute);margin-top:22px">Desde los KPI se accede al resumen de los contratos de cada nivel de riesgo.</p>
   </div>
-  <div class="num">10</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">10 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 11 KPI -->
 <section class="slide">
+  <div class="rail"><span>Análisis de contratos · KPI</span></div><div class="ghost">11</div>
   <div class="kicker">Análisis de contratos · KPI</div>
-  <h2 class="title">Los KPI muestran valor, estado y riesgo de toda la cartera</h2>
-  <div class="body">
-    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi"><b>Valor total</b><span>Suma del valor de todos los contratos</span></div>
-      <div class="kpi"><b>Pendientes de aprobación</b><span>Contratos que esperan una aprobación</span></div>
-      <div class="kpi"><b>Firmados</b><span>Contratos con la firma completa</span></div>
-      <div class="kpi"><b>Total de contratos</b><span>Cantidad de contratos en el sitio</span></div>
-      <div class="kpi"><b>Tipos de contrato</b><span>Distribución por tipo de contrato</span></div>
-      <div class="kpi hot"><b>Riesgo alto y bajo</b><span>Contratos según su puntuación de riesgo</span></div>
+  <h2 class="title">Los KPI muestran valor, estado y riesgo de <em>toda la cartera</em></h2>
+  <div class="body" style="top:236px">
+    <div class="kpis">
+      <div class="kpi r" style="--i:0"><i>KPI 01</i><b>Valor total</b><span>Suma del valor de todos los contratos</span></div>
+      <div class="kpi r" style="--i:1"><i>KPI 02</i><b>Pendientes de aprobación</b><span>Contratos que esperan una aprobación</span></div>
+      <div class="kpi r" style="--i:2"><i>KPI 03</i><b>Firmados</b><span>Contratos con la firma completa</span></div>
+      <div class="kpi r" style="--i:3"><i>KPI 04</i><b>Total de contratos</b><span>Cantidad de contratos en el sitio</span></div>
+      <div class="kpi r" style="--i:4"><i>KPI 05</i><b>Tipos de contrato</b><span>Distribución por tipo de contrato</span></div>
+      <div class="kpi hot r" style="--i:5"><i>KPI 06</i><b>Riesgo alto y bajo</b><span>Contratos según su puntuación de riesgo</span></div>
     </div>
-    <div class="note" style="margin-top:22px">Al hacer clic en un KPI se abre el resumen de los contratos que lo componen, por ejemplo todos los de riesgo alto.</div>
+    <div class="note r" style="--i:6">Al hacer clic en un KPI se abre el resumen de los contratos que lo componen, por ejemplo todos los de riesgo alto.</div>
   </div>
-  <div class="num">11</div><div class="logo">Thomson<small>Reuters</small></div>
+  <div class="pg">11 / 12</div><div class="logo">Thomson<small>Reuters</small></div>
 </section>
 
 <!-- 12 GRACIAS -->
-<section class="slide mint">
-  <div class="logo" style="left:56px;right:auto;top:30px;bottom:auto">Thomson<small>Reuters</small></div>
-  <div style="position:absolute;left:56px;bottom:60px;font-size:96px;font-weight:300;color:var(--green)">¡Gracias!</div>
+<section class="slide thanks" style="background:var(--mint)">
+  <svg class="web" viewBox="0 0 600 600" fill="none" stroke="#5a8a3a" stroke-width="1.2"><g id="w"></g></svg>
+  <div class="logo" style="left:96px;right:auto;top:60px;bottom:auto;text-align:left">Thomson<small>Reuters</small></div>
+  <h1 class="r" style="--i:1">¡<em>Gracias</em>!</h1>
 </section>
 
 </div></div>
 
 <div id="grid"></div>
-<div id="badge">Modo edición · E para salir</div>
+<div id="badge">MODO EDICIÓN · ESC PARA SALIR</div>
 <div id="bar">
-  <button id="prev">◀</button><span id="count"></span><button id="next">▶</button>
-  <button id="btnGrid">Miniaturas (G)</button><button id="btnEdit">Editar (E)</button><button id="btnFs">Pantalla completa (F)</button>
+  <button id="prev" title="Anterior">←</button><span id="count"></span><button id="next" title="Siguiente">→</button>
+  <button id="btnGrid">Miniaturas · G</button><button id="btnEdit">Editar · E</button><button id="btnFs">Pantalla completa · F</button>
 </div>
 
 <script>
 (function(){
   var stage=document.getElementById('stage'),slides=[].slice.call(stage.querySelectorAll('.slide')),
-      grid=document.getElementById('grid'),count=document.getElementById('count'),cur=0;
-  try{cur=Math.min(slides.length-1,parseInt(location.hash.slice(1),10)-1||0)}catch(e){}
+      grid=document.getElementById('grid'),count=document.getElementById('count'),prog=document.getElementById('prog'),cur=0;
+  var h=parseInt(location.hash.slice(1),10);if(h>0)cur=Math.min(slides.length-1,h-1);
+
+  // telaraña decorativa del cierre
+  var g='',pts=[],N=14;
+  for(var i=0;i<N;i++){var a=i/N*Math.PI*2;pts.push([300+Math.cos(a)*280,300+Math.sin(a)*280])}
+  pts.forEach(function(p,i){var q=pts[(i+5)%N],r=pts[(i+6)%N];
+    g+='<line x1="'+p[0]+'" y1="'+p[1]+'" x2="'+q[0]+'" y2="'+q[1]+'"/><line x1="'+p[0]+'" y1="'+p[1]+'" x2="'+r[0]+'" y2="'+r[1]+'"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#7ab84e" stroke="none"/>'});
+  document.getElementById('w').innerHTML=g;
+
   function fit(){var s=Math.min(innerWidth/1280,innerHeight/720);stage.style.transform='scale('+s+')'}
   function show(i){
     cur=Math.max(0,Math.min(slides.length-1,i));
     slides.forEach(function(s,k){s.classList.toggle('active',k===cur)});
     count.textContent=(cur+1)+' / '+slides.length;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
     history.replaceState(null,'','#'+(cur+1));
   }
   function buildGrid(){
@@ -273,31 +397,30 @@ body.edit #badge{display:block}
     slides.forEach(function(s,i){
       var th=document.createElement('div');th.className='th';
       var inn=document.createElement('div');inn.className='in';
-      var c=s.cloneNode(true);c.classList.add('active');inn.appendChild(c);th.appendChild(inn);
-      grid.appendChild(th);
+      inn.appendChild(s.cloneNode(true));th.appendChild(inn);grid.appendChild(th);
       th.onclick=function(){grid.classList.remove('on');show(i)};
     });
     requestAnimationFrame(function(){[].forEach.call(grid.querySelectorAll('.th'),function(t){
       t.firstChild.style.transform='scale('+(t.clientWidth/1280)+')'})});
   }
-  function toggleGrid(){if(grid.classList.contains('on')){grid.classList.remove('on')}else{buildGrid();grid.classList.add('on')}}
+  function toggleGrid(){if(grid.classList.contains('on'))grid.classList.remove('on');else{buildGrid();grid.classList.add('on')}}
+  var EDIT='h2,h4,b,p,li,span,small,.kicker,.n,.v,.item,.agenda div,.sub,.date,.stamp';
   function toggleEdit(){
     var on=document.body.classList.toggle('edit');
-    [].forEach.call(stage.querySelectorAll('h2,h4,b,p,li,span,small,div.kicker,.callout,.note'),function(el){
-      if(on)el.setAttribute('contenteditable','true');else el.removeAttribute('contenteditable')});
+    [].forEach.call(stage.querySelectorAll(EDIT),function(el){on?el.setAttribute('contenteditable','true'):el.removeAttribute('contenteditable')});
   }
   function fs(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
   document.addEventListener('keydown',function(e){
-    if(document.body.classList.contains('edit')&&e.target.isContentEditable){if(e.key==='Escape')toggleEdit();return}
+    if(document.body.classList.contains('edit')&&e.target.isContentEditable){if(e.key==='Escape'){e.target.blur();toggleEdit()}return}
     var k=e.key;
     if(k==='ArrowRight'||k==='PageDown'||k===' ')show(cur+1);
     else if(k==='ArrowLeft'||k==='PageUp')show(cur-1);
     else if(k==='Home')show(0);else if(k==='End')show(slides.length-1);
-    else if(k==='g'||k==='G'||k==='Escape'&&grid.classList.contains('on'))toggleGrid();
+    else if(k==='g'||k==='G'||(k==='Escape'&&grid.classList.contains('on')))toggleGrid();
     else if(k==='e'||k==='E')toggleEdit();
     else if(k==='f'||k==='F')fs();
   });
-  stage.addEventListener('click',function(e){if(!document.body.classList.contains('edit'))show(cur+(e.clientX>innerWidth/2?1:-1))});
+  stage.addEventListener('click',function(e){if(!document.body.classList.contains('edit')&&!e.target.closest('.card,.tile,.kpi,.item'))show(cur+(e.clientX>innerWidth/2?1:-1))});
   document.getElementById('prev').onclick=function(){show(cur-1)};
   document.getElementById('next').onclick=function(){show(cur+1)};
   document.getElementById('btnGrid').onclick=toggleGrid;
