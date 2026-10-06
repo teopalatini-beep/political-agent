@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contract Intelligence</title>
+<style>
+:root{--green:#123015;--orange:#D64000;--cream:#F8EADD;--ink:#212322;--teal:#4DB299;--mint:#E3F2CC;--grey:#6B6B6B}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0b160c;font-family:"Clario","Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);overflow:hidden}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none}
+.slide{position:absolute;inset:0;background:#fff;display:none;overflow:hidden;border-top:4px solid var(--orange)}
+.slide.active{display:block}
+.slide.dark{background:var(--green);border-top:0;color:#fff}
+.slide.mint{background:var(--mint);border-top:0}
+.kicker{position:absolute;left:56px;top:34px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+h2.title{position:absolute;left:56px;top:62px;right:56px;font-size:34px;font-weight:400;line-height:1.2}
+.body{position:absolute;left:56px;right:56px;top:150px;bottom:90px}
+.num{position:absolute;left:56px;bottom:30px;font-size:12px;color:var(--orange);display:flex;align-items:center;gap:6px}
+.num:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.logo{position:absolute;right:56px;bottom:22px;font-weight:700;font-size:15px;line-height:1;color:var(--ink);text-align:left}
+.logo small{display:block;font-weight:400}
+.dark .logo,.dark .num{color:#fff}
+.mint .logo{color:var(--ink)}
+ul{list-style:none}
+li{position:relative;padding-left:16px;margin:8px 0;font-size:18px}
+li:before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--orange)}
+.sm li{font-size:14px;margin:6px 0}
+.grid{display:grid;gap:16px}
+.card{background:var(--cream);padding:16px 18px;border-radius:2px}
+.card b{display:block;font-size:17px;margin-bottom:4px}
+.card span{font-size:14px;color:#444}
+.step{display:flex;gap:14px;align-items:flex-start}
+.badge{flex:none;width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.hdr{background:var(--green);color:#fff;padding:16px 18px}
+.hdr b{display:block;font-size:19px}.hdr span{font-size:13px;opacity:.85}
+.row{background:var(--cream);padding:14px 18px 14px 36px;font-size:16px;margin-top:10px;position:relative}
+.row:before{content:"";position:absolute;left:16px;top:50%;margin-top:-4px;width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.col{background:var(--cream);padding:18px;min-height:300px;border-top:3px solid var(--orange)}
+.col h4{font-size:18px;margin-bottom:8px}
+.chev{background:var(--green);color:#fff;padding:18px 26px;font-weight:700;font-size:17px;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%,22px 50%);text-align:center}
+.chev.hot{background:var(--orange)}
+.circle{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.circle.hot{background:var(--orange)}
+.callout{background:var(--green);color:#fff;padding:18px 24px;font-size:22px;font-weight:700}
+.callout small{display:block;font-size:13px;font-weight:400;margin-bottom:4px}
+.note{background:var(--cream);border-left:4px solid var(--orange);padding:12px 18px;font-size:15px}
+.kpi{background:var(--green);color:#fff;padding:22px;min-height:130px}
+.kpi.hot{background:var(--orange)}
+.kpi b{font-size:21px;display:block;margin-bottom:6px}.kpi span{font-size:14px;opacity:.9}
+.scale{display:grid;grid-template-columns:repeat(10,1fr)}
+.scale div{padding:14px 0;text-align:center;color:#fff;font-weight:700;background:var(--teal)}
+.scale div.hi{background:var(--orange)}
+.big{font-size:44px;font-weight:700;color:var(--green)}
+/* chrome */
+#bar{position:fixed;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.55);color:#fff;font-size:13px;opacity:0;transition:.2s;z-index:10}
+#bar:hover{opacity:1}
+#bar button{background:#fff2;border:0;color:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font:inherit}
+#bar button:hover{background:#fff4}
+#grid{position:fixed;inset:0;background:#0b160c;display:none;overflow:auto;padding:24px;z-index:20;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+#grid.on{display:grid}
+#grid .th{position:relative;width:100%;aspect-ratio:16/9;background:#fff;overflow:hidden;cursor:pointer;border:2px solid transparent}
+#grid .th:hover{border-color:var(--orange)}
+#grid .th .in{width:1280px;height:720px;transform-origin:0 0;position:absolute;pointer-events:none}
+body.edit .slide *[contenteditable]{outline:1px dashed #d6400055}
+#badge{position:fixed;top:10px;right:10px;background:var(--orange);color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;display:none;z-index:30}
+body.edit #badge{display:block}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+
+<!-- 1 PORTADA -->
+<section class="slide dark">
+  <svg style="position:absolute;left:0;top:0" width="520" height="130" fill="none" stroke="#D64000" stroke-width="2"><path d="M0 60C80 20 160 10 240 40"/><circle cx="240" cy="40" r="6" fill="#D64000"/><path d="M0 100H120" /><circle cx="90" cy="100" r="5" fill="#D64000"/></svg>
+  <div style="position:absolute;left:120px;top:190px;font-size:64px;line-height:1.1;font-weight:300">Contract<br><span style="color:var(--orange)">Intelligence</span></div>
+  <div style="position:absolute;left:120px;top:420px;font-size:20px">Guía de uso del sitio para solicitantes y equipo legal</div>
+  <div style="position:absolute;left:120px;top:560px;font-size:14px">Octubre 2026</div>
+  <div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 2 AGENDA -->
+<section class="slide">
+  <h2 class="title" style="left:96px;top:100px;font-size:38px;color:var(--orange)">Agenda</h2>
+  <div style="position:absolute;left:300px;top:100px;bottom:120px;border-left:2px solid var(--orange);padding-left:36px">
+    <ul style="font-size:20px">
+      <li>Legal Intake: solicitudes y seguimiento</li>
+      <li>Main dashboard del equipo legal</li>
+      <li>Archivos: del ingreso a la firma</li>
+      <li>Informes</li>
+      <li>Tareas, calendario y equipo legal</li>
+      <li>Extracción con IA y puntuación de riesgo</li>
+      <li>KPI de análisis de contratos</li>
+    </ul>
+  </div>
+  <div class="num">2</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 3 FORMULARIO -->
+<section class="slide">
+  <div class="kicker">Legal Intake · Formulario</div>
+  <h2 class="title">El solicitante carga el contrato y sus datos en un solo formulario</h2>
+  <div class="body grid" style="grid-template-columns:1fr 1fr;grid-auto-rows:min-content">
+    <div class="card step"><div class="badge">1</div><div><b>Unidad de negocio</b><span>Departamento que solicita, por ejemplo Ventas</span></div></div>
+    <div class="card step"><div class="badge">2</div><div><b>Archivo del contrato</b><span>El documento que Legal debe revisar</span></div></div>
+    <div class="card step"><div class="badge">3</div><div><b>Nombre del vendor</b><span>Contraparte del contrato, por ejemplo Thomson Reuters</span></div></div>
+    <div class="card step"><div class="badge">4</div><div><b>Tipo de solicitud</b><span>Por ejemplo, revisión de contratos</span></div></div>
+    <div class="card step"><div class="badge">5</div><div><b>Descripción breve</b><span>Qué necesita el solicitante y por qué</span></div></div>
+    <div class="card step"><div class="badge">6</div><div><b>Fecha de inicio</b><span>Inicio previsto del contrato</span></div></div>
+    <div class="card step"><div class="badge">7</div><div><b>Fecha de vencimiento solicitada</b><span>Opcional: plazo deseado para la respuesta</span></div></div>
+    <div class="card step"><div class="badge">8</div><div><b>Documento adjunto</b><span>Archivos relacionados, por ejemplo un poder</span></div></div>
+  </div>
+  <div class="num">3</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 4 PANELES -->
+<section class="slide">
+  <div class="kicker">Legal Intake · Paneles de seguimiento</div>
+  <h2 class="title">Los paneles siguen cada solicitud hasta la aprobación y la firma</h2>
+  <div class="body grid" style="grid-template-columns:repeat(3,1fr);align-items:start">
+    <div><div class="hdr"><b>Solicitudes</b><span>Cuántas solicitudes llegan a Legal</span></div>
+      <div class="row">Total de solicitudes legales</div><div class="row">Solicitudes pendientes</div><div class="row">Mis solicitudes pendientes</div></div>
+    <div><div class="hdr"><b>Aprobación de contratos</b><span>Quién debe aprobar cada contrato</span></div>
+      <div class="row">Todos los contratos</div><div class="row">Mis solicitudes por aprobar</div><div class="row">Esperando aprobación del administrador</div></div>
+    <div><div class="hdr"><b>Estado de la firma</b><span>En qué punto está la firma</span></div>
+      <div class="row">Enviados a firma</div><div class="row">Listos para firmar</div><div class="row">Firmados</div><div class="row">Rechazados para firma</div></div>
+  </div>
+  <div class="num">4</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 5 DASHBOARD -->
+<section class="slide">
+  <div class="kicker">Main dashboard · Espacio del equipo legal</div>
+  <h2 class="title">El dashboard reúne accesos, novedades y tareas del equipo legal</h2>
+  <div class="body grid" style="grid-template-columns:repeat(4,1fr);align-items:stretch">
+    <div class="col"><h4>Accesos directos</h4><ul class="sm"><li>Análisis de contratos</li><li>Resumen de consultas</li><li>Análisis de documentos</li><li>Tareas del equipo legal</li></ul></div>
+    <div class="col"><h4>Equipo</h4><ul class="sm"><li>Quién integra el equipo legal</li></ul></div>
+    <div class="col"><h4>Novedades</h4><ul class="sm"><li>Últimas actualizaciones</li><li>Documentos ingresados</li><li>Actividad reciente del Automation Engine y de los usuarios</li></ul></div>
+    <div class="col"><h4>Tareas</h4><ul class="sm"><li>Tareas pendientes</li><li>Tareas de los próximos 30 días</li></ul></div>
+  </div>
+  <div class="num">5</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 6 ARCHIVOS -->
+<section class="slide">
+  <div class="kicker">Archivos · Carpeta Contract Intelligence</div>
+  <h2 class="title">Cada contrato avanza por carpetas, de la solicitud a la firma</h2>
+  <div class="body">
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:6px">
+      <div class="chev">Solicitud de contratos</div><div class="chev">Repositorio principal</div><div class="chev">Revisión y negociación</div><div class="chev hot">Contratos firmados</div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-top:14px">
+      <div class="col"><h4>Aquí llegan los documentos ingresados por Legal Intake</h4><ul class="sm"><li>La IA usa una biblioteca de prompts para revisar el documento</li><li>Extrae la información y lo envía a la siguiente etapa</li></ul></div>
+      <div class="col"><h4>Carpetas inteligentes que se completan solas</h4><ul class="sm"><li>Todos los contratos</li><li>Pendientes de clasificación: aún sin clasificar</li><li>Renovaciones: contratos en estado para renovar</li></ul></div>
+      <div class="col"><h4>Contratos en manos de Legal</h4><ul class="sm"><li>Contratos enviados a aprobar</li></ul></div>
+      <div class="col"><h4>Destino final del contrato</h4><ul class="sm"><li>Contratos con la firma completa</li></ul></div>
+    </div>
+    <p style="font-size:12px;color:var(--grey);margin-top:12px">La carpeta Outlook existe en el sitio, pero hoy no se usa.</p>
+  </div>
+  <div class="num">6</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 7 INFORMES -->
+<section class="slide">
+  <div class="kicker">Informes</div>
+  <h2 class="title">Informes agrupa vistas de contratos, casos, tareas y resúmenes</h2>
+  <div class="body grid" style="grid-template-columns:1fr 1.2fr 1.4fr;gap:40px">
+    <div><h4 style="font-size:17px">Para qué sirve</h4><p style="font-size:15px;margin-top:8px">Consultar la información del sitio con vistas ya armadas.</p></div>
+    <div><h4 style="font-size:17px">Vistas de informes</h4><ul><li>Información de contratos</li><li>Casos</li><li>Tareas</li></ul></div>
+    <div><h4 style="font-size:17px">Vistas de resumen de contrato</h4><ul><li>Borrador</li><li>Resumen completo</li><li>Por carpeta</li><li>Contratos en general</li></ul></div>
+  </div>
+  <div class="num">7</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 8 TAREAS -->
+<section class="slide">
+  <div class="kicker">Tareas, calendario y equipo legal</div>
+  <h2 class="title">Las tareas llegan solas al equipo legal al ingresar un documento</h2>
+  <div class="body grid" style="grid-template-columns:1fr 1.3fr 1.3fr;gap:40px">
+    <div><h4 style="font-size:17px">Para qué sirve</h4><p style="font-size:15px;margin-top:8px">Organizar el trabajo del equipo legal sin asignarlo a mano.</p></div>
+    <div><h4 style="font-size:17px">Tareas</h4><ul><li>Se crean automáticamente al ingresar un documento</li><li>Se asignan al Legal Team: todas las personas del equipo legal</li><li>Contract internal review: revisiones internas del equipo legal</li></ul></div>
+    <div><h4 style="font-size:17px">Calendario</h4><ul><li>Tareas y categoría general</li><li>Mis borradores y favoritos</li><li>Solicitudes asignadas a mí</li></ul>
+      <h4 style="font-size:17px;margin-top:18px">Equipo legal y administración</h4><ul><li>Equipo legal: quiénes participan</li><li>Administración del sitio: solo para administradores</li></ul></div>
+  </div>
+  <div class="num">8</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 9 IA -->
+<section class="slide">
+  <div class="kicker">Beneficio · Inteligencia artificial</div>
+  <h2 class="title">La IA extrae y clasifica los datos clave de cada contrato</h2>
+  <div class="body">
+    <div style="position:relative">
+      <div style="position:absolute;left:12%;right:12%;top:32px;border-top:2px solid var(--orange)"></div>
+      <div class="grid" style="grid-template-columns:repeat(4,1fr);position:relative;text-align:center">
+        <div><div class="circle">1</div><b>Metadatos de archivo</b><p style="font-size:14px;margin-top:6px">El sitio guarda los datos de cada contrato como metadatos</p></div>
+        <div><div class="circle">2</div><b>Set de preguntas</b><p style="font-size:14px;margin-top:6px">La IA responde un set de preguntas sobre cada contrato</p></div>
+        <div><div class="circle">3</div><b>Extracción y clasificación</b><p style="font-size:14px;margin-top:6px">Extrae la información más relevante y clasifica el contrato</p></div>
+        <div><div class="circle hot">4</div><b>Puntuación de riesgo</b><p style="font-size:14px;margin-top:6px">Puntúa cada cláusula y calcula el riesgo del contrato</p></div>
+      </div>
+    </div>
+    <div class="callout" style="position:absolute;left:0;right:0;bottom:0"><small>Resultado</small>Cada contrato queda clasificado y con su puntuación de riesgo de forma automática.</div>
+  </div>
+  <div class="num">9</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 10 RIESGO -->
+<section class="slide">
+  <div class="kicker">Beneficio · Puntuación de riesgo</div>
+  <h2 class="title">Cada cláusula que no cumple lo esperado suma 1 punto de riesgo</h2>
+  <div class="body">
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big">0</div><small>punto</small></div><span style="font-size:15px">La cláusula está y cumple lo que espera el equipo legal</span></div>
+      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big" style="color:var(--orange)">1</div><small>punto</small></div><span style="font-size:15px">La cláusula falta o no cumple lo esperado</span></div>
+      <div class="card step" style="align-items:center"><div style="text-align:center"><div class="big">Σ</div><small>total</small></div><span style="font-size:15px">La suma de puntos es la puntuación de riesgo del contrato</span></div>
+    </div>
+    <h4 style="font-size:14px;margin:28px 0 8px">Escala de riesgo por contrato (puntos)</h4>
+    <div class="scale"><div>1</div><div>2</div><div>3</div><div class="hi">4</div><div class="hi">5</div><div class="hi">6</div><div class="hi">7</div><div class="hi">8</div><div class="hi">9</div><div class="hi">10</div></div>
+    <div style="display:flex;margin-top:10px"><div style="width:30%"><b>Riesgo bajo</b><br><span style="font-size:14px">De 1 a 3 puntos</span></div><div><b style="color:var(--orange)">Riesgo alto</b><br><span style="font-size:14px">Más de 3 y hasta 10 puntos</span></div></div>
+    <p style="font-size:13px;margin-top:30px">Desde los KPI se accede al resumen de los contratos de cada nivel de riesgo.</p>
+  </div>
+  <div class="num">10</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 11 KPI -->
+<section class="slide">
+  <div class="kicker">Análisis de contratos · KPI</div>
+  <h2 class="title">Los KPI muestran valor, estado y riesgo de toda la cartera</h2>
+  <div class="body">
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi"><b>Valor total</b><span>Suma del valor de todos los contratos</span></div>
+      <div class="kpi"><b>Pendientes de aprobación</b><span>Contratos que esperan una aprobación</span></div>
+      <div class="kpi"><b>Firmados</b><span>Contratos con la firma completa</span></div>
+      <div class="kpi"><b>Total de contratos</b><span>Cantidad de contratos en el sitio</span></div>
+      <div class="kpi"><b>Tipos de contrato</b><span>Distribución por tipo de contrato</span></div>
+      <div class="kpi hot"><b>Riesgo alto y bajo</b><span>Contratos según su puntuación de riesgo</span></div>
+    </div>
+    <div class="note" style="margin-top:22px">Al hacer clic en un KPI se abre el resumen de los contratos que lo componen, por ejemplo todos los de riesgo alto.</div>
+  </div>
+  <div class="num">11</div><div class="logo">Thomson<small>Reuters</small></div>
+</section>
+
+<!-- 12 GRACIAS -->
+<section class="slide mint">
+  <div class="logo" style="left:56px;right:auto;top:30px;bottom:auto">Thomson<small>Reuters</small></div>
+  <div style="position:absolute;left:56px;bottom:60px;font-size:96px;font-weight:300;color:var(--green)">¡Gracias!</div>
+</section>
+
+</div></div>
+
+<div id="grid"></div>
+<div id="badge">Modo edición · E para salir</div>
+<div id="bar">
+  <button id="prev">◀</button><span id="count"></span><button id="next">▶</button>
+  <button id="btnGrid">Miniaturas (G)</button><button id="btnEdit">Editar (E)</button><button id="btnFs">Pantalla completa (F)</button>
+</div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage'),slides=[].slice.call(stage.querySelectorAll('.slide')),
+      grid=document.getElementById('grid'),count=document.getElementById('count'),cur=0;
+  try{cur=Math.min(slides.length-1,parseInt(location.hash.slice(1),10)-1||0)}catch(e){}
+  function fit(){var s=Math.min(innerWidth/1280,innerHeight/720);stage.style.transform='scale('+s+')'}
+  function show(i){
+    cur=Math.max(0,Math.min(slides.length-1,i));
+    slides.forEach(function(s,k){s.classList.toggle('active',k===cur)});
+    count.textContent=(cur+1)+' / '+slides.length;
+    history.replaceState(null,'','#'+(cur+1));
+  }
+  function buildGrid(){
+    grid.innerHTML='';
+    slides.forEach(function(s,i){
+      var th=document.createElement('div');th.className='th';
+      var inn=document.createElement('div');inn.className='in';
+      var c=s.cloneNode(true);c.classList.add('active');inn.appendChild(c);th.appendChild(inn);
+      grid.appendChild(th);
+      th.onclick=function(){grid.classList.remove('on');show(i)};
+    });
+    requestAnimationFrame(function(){[].forEach.call(grid.querySelectorAll('.th'),function(t){
+      t.firstChild.style.transform='scale('+(t.clientWidth/1280)+')'})});
+  }
+  function toggleGrid(){if(grid.classList.contains('on')){grid.classList.remove('on')}else{buildGrid();grid.classList.add('on')}}
+  function toggleEdit(){
+    var on=document.body.classList.toggle('edit');
+    [].forEach.call(stage.querySelectorAll('h2,h4,b,p,li,span,small,div.kicker,.callout,.note'),function(el){
+      if(on)el.setAttribute('contenteditable','true');else el.removeAttribute('contenteditable')});
+  }
+  function fs(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+  document.addEventListener('keydown',function(e){
+    if(document.body.classList.contains('edit')&&e.target.isContentEditable){if(e.key==='Escape')toggleEdit();return}
+    var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||k===' ')show(cur+1);
+    else if(k==='ArrowLeft'||k==='PageUp')show(cur-1);
+    else if(k==='Home')show(0);else if(k==='End')show(slides.length-1);
+    else if(k==='g'||k==='G'||k==='Escape'&&grid.classList.contains('on'))toggleGrid();
+    else if(k==='e'||k==='E')toggleEdit();
+    else if(k==='f'||k==='F')fs();
+  });
+  stage.addEventListener('click',function(e){if(!document.body.classList.contains('edit'))show(cur+(e.clientX>innerWidth/2?1:-1))});
+  document.getElementById('prev').onclick=function(){show(cur-1)};
+  document.getElementById('next').onclick=function(){show(cur+1)};
+  document.getElementById('btnGrid').onclick=toggleGrid;
+  document.getElementById('btnEdit').onclick=toggleEdit;
+  document.getElementById('btnFs').onclick=fs;
+  addEventListener('resize',fit);fit();show(cur);
+})();
+</script>
+</body>
+</html>
