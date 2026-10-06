@@ -168,11 +168,12 @@ body.edit [contenteditable]{outline:1px dashed #d6400066;cursor:text}
 </style>
 </head>
 <body>
+<noscript><p style="position:fixed;top:10px;left:10px;color:#fff;z-index:99">Activa JavaScript para navegar la presentación.</p></noscript>
 <div id="prog"></div>
 <div id="viewport"><div id="stage">
 
 <!-- 1 PORTADA -->
-<section class="slide dark cover">
+<section class="slide dark cover active">
   <svg style="position:absolute;inset:0" width="1280" height="720" fill="none"><g stroke="#FF6A2B" stroke-width="1.5" opacity=".6"><path d="M-10 640C220 600 380 690 560 650S900 560 1290 640"/><path d="M-10 670C240 640 400 720 580 685S920 600 1290 670" opacity=".4"/></g></svg>
   <div class="r" style="--i:0;position:absolute;left:100px;top:96px;font:500 12px var(--mono);letter-spacing:.3em;color:#ffffff99">GUÍA DE USO · HIGHQ</div>
   <h1 class="r" style="--i:1">Contract<br><em>Intelligence</em></h1>
@@ -390,7 +391,7 @@ body.edit [contenteditable]{outline:1px dashed #d6400066;cursor:text}
     slides.forEach(function(s,k){s.classList.toggle('active',k===cur)});
     count.textContent=(cur+1)+' / '+slides.length;
     prog.style.width=((cur+1)/slides.length*100)+'%';
-    history.replaceState(null,'','#'+(cur+1));
+    try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
   }
   function buildGrid(){
     grid.innerHTML='';
